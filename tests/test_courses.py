@@ -117,3 +117,68 @@ def test_student_can_list_courses(client, staff_token, student_token, teacher_id
 
     assert response.status_code == 200
     assert len(response.json()) == 1
+
+
+def create_course_for_test(client, staff_token, teacher_id):
+    response = client.post(
+        "/api/courses",
+        json=course_payload(teacher_id),
+        headers={"Authorization": f"Bearer {staff_token}"},
+    )
+    return response.json()["id"]
+
+
+def session_payload():
+    return {"date": "2026-10-18T10:00:00", "zoom_link": "https://zoom.us/j/123456789"}
+
+
+def test_staff_can_create_session(client, staff_token, teacher_id):
+    course_id = create_course_for_test(client, staff_token, teacher_id)
+
+    response = client.post(
+        f"/api/courses/{course_id}/sessions",
+        json=session_payload(),
+        headers={"Authorization": f"Bearer {staff_token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["course_id"] == course_id
+
+
+def test_student_cannot_create_session(client, staff_token, student_token, teacher_id):
+    course_id = create_course_for_test(client, staff_token, teacher_id)
+
+    response = client.post(
+        f"/api/courses/{course_id}/sessions",
+        json=session_payload(),
+        headers={"Authorization": f"Bearer {student_token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_session_on_unknown_course_returns_404(client, staff_token):
+    response = client.post(
+        "/api/courses/999/sessions",
+        json=session_payload(),
+        headers={"Authorization": f"Bearer {staff_token}"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_student_can_list_sessions(client, staff_token, student_token, teacher_id):
+    course_id = create_course_for_test(client, staff_token, teacher_id)
+    client.post(
+        f"/api/courses/{course_id}/sessions",
+        json=session_payload(),
+        headers={"Authorization": f"Bearer {staff_token}"},
+    )
+
+    response = client.get(
+        f"/api/courses/{course_id}/sessions",
+        headers={"Authorization": f"Bearer {student_token}"},
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
