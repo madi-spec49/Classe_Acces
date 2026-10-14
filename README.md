@@ -36,14 +36,14 @@ Sont reportés en phase future : les signalements d'absence, la messagerie et le
 | Authentification | JWT (python-jose) + mots de passe hachés avec bcrypt (passlib) |
 | Tests | pytest + FastAPI TestClient (base SQLite en mémoire) |
 | Conteneurisation | Docker Compose |
-| Front-end | HTML + JavaScript natif (à venir) |
+| Front-end | HTML + JavaScript natif (dossier `frontend/`) |
 
 ## Structure du projet
 
 ```
 school-assoc/
 ├── app/
-│   ├── main.py             # Création de l'application FastAPI et des routes
+│   ├── main.py             # Création de l'application FastAPI, CORS et routes
 │   ├── config.py           # Connexion à la base (engine, get_db)
 │   ├── dependencies.py     # get_current_user et require_role
 │   ├── security/           # Hachage des mots de passe et tokens JWT
@@ -53,10 +53,18 @@ school-assoc/
 ├── db/
 │   └── schema.sql          # Schéma PostgreSQL de référence
 ├── docs/                   # Documentation technique complète
+├── frontend/
+│   ├── login.html          # Page de connexion
+│   ├── courses.html        # Liste des cours et demande d'inscription (élève)
+│   └── staff.html          # Validation des inscriptions (staff)
 ├── tests/
 │   ├── conftest.py         # Base de test et client partagés
 │   ├── test_auth.py        # Inscription, connexion, /me
-│   └── test_staff.py       # Contrôle des rôles
+│   ├── test_staff.py       # Contrôle des rôles
+│   ├── test_courses.py     # Cours et sessions
+│   ├── test_registrations.py # Demandes d'inscription
+│   ├── test_attendance.py  # Assiduité
+│   └── test_progress.py    # Suivi de progression
 ├── docker-compose.yml      # Service PostgreSQL
 ├── requirements.txt        # Dépendances Python
 ├── .env.example            # Modèle de variables d'environnement
@@ -69,37 +77,46 @@ Prérequis : Python 3.12 et Docker Desktop.
 
 1. Cloner le projet et entrer dans le dossier :
 
-   ```bash
+```bash
    git clone https://github.com/madi-spec49/school-assoc.git
    cd school-assoc
-   ```
+```
 
 2. Créer et activer l'environnement virtuel :
 
-   ```bash
+```bash
    python3 -m venv venv
    source venv/bin/activate
-   ```
+```
 
 3. Installer les dépendances :
 
-   ```bash
+```bash
    pip install -r requirements.txt
-   ```
+```
 
 4. Lancer la base PostgreSQL :
 
-   ```bash
+```bash
    docker compose up -d db
-   ```
+```
 
 5. Lancer l'API :
 
-   ```bash
+```bash
    uvicorn app.main:app --reload
-   ```
+```
 
    L'API répond sur http://127.0.0.1:8000. La documentation interactive générée par FastAPI est disponible sur http://127.0.0.1:8000/docs.
+
+6. Lancer le front-end, dans un second terminal :
+
+```bash
+   cd frontend
+   python3 -m http.server 5500
+```
+
+   Ouvrir ensuite http://127.0.0.1:5500/login.html dans le navigateur. Le port 5500 est autorisé par CORS dans l'API.
 
 ## Variables d'environnement
 
@@ -125,12 +142,23 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/auth/register` | Public | Crée un compte élève et renvoie un token |
 | POST | `/api/auth/login` | Public | Connecte un utilisateur et renvoie un token |
 | GET | `/api/auth/me` | Utilisateur connecté | Renvoie le profil de l'utilisateur courant |
-| POST | `/api/staff/teachers` | Staff uniquement | Crée un compte professeur |
+| POST | `/api/staff/teachers` | Staff | Crée un compte professeur |
+| POST | `/api/courses` | Staff | Crée un cours |
+| GET | `/api/courses` | Utilisateur connecté | Liste les cours |
+| POST | `/api/courses/{course_id}/sessions` | Staff | Crée une session de cours |
+| GET | `/api/courses/{course_id}/sessions` | Utilisateur connecté | Liste les sessions d'un cours |
+| POST | `/api/registrations` | Élève | Demande une inscription à un cours |
+| GET | `/api/registrations` | Staff | Liste les demandes (filtre `?status=`) |
+| PATCH | `/api/registrations/{enrollment_id}` | Staff | Valide ou refuse une demande |
+| POST | `/api/sessions/{session_id}/attendance` | Professeur du cours | Enregistre une présence |
+| GET | `/api/sessions/{session_id}/attendance` | Staff ou professeur du cours | Liste les présences d'une session |
+| POST | `/api/progress` | Professeur du cours | Enregistre une progression |
+| GET | `/api/progress/students/{student_id}` | L'élève concerné ou le staff | Liste la progression d'un élève |
 | GET | `/health` | Public | Vérifie que l'API répond |
 
 Les routes protégées attendent un header `Authorization: Bearer <token>`. Le token est renvoyé par `register` ou `login`.
 
-Codes de réponse courants : `400` email déjà utilisé, `401` identifiants incorrects ou token invalide ou expiré, `403` token valide mais rôle insuffisant, `422` données envoyées invalides.
+Codes de réponse courants : `400` requête invalide (email déjà utilisé, inscription déjà demandée, élève non inscrit), `401` identifiants incorrects ou token invalide ou expiré, `403` token valide mais rôle insuffisant, `404` ressource introuvable, `422` données envoyées invalides.
 
 Exemple d'inscription :
 
@@ -153,7 +181,7 @@ Les tests utilisent une base SQLite en mémoire, séparée de la base PostgreSQL
 python -m pytest -v
 ```
 
-Les tests couvrent l'inscription, la connexion, la route `/me`, et le refus de création de professeur pour un élève ou sans token.
+Les 36 tests couvrent l'authentification, le contrôle des rôles, les cours et sessions, les demandes d'inscription, l'assiduité et le suivi de progression.
 
 ## Documentation
 
@@ -187,7 +215,12 @@ Exemples :
 
 Cycle de travail : une branche `feature/*` est créée depuis `develop`, le travail est commité par petites étapes, puis la branche est fusionnée dans `develop`. `develop` est fusionnée dans `main` à la fin de chaque phase.
 
-Améliorations possibles après le MVP : migrations de base de données avec Alembic, chargement automatique du fichier `.env`.
+## Statut
+
+- Terminé côté API : authentification et rôles, cours et sessions, demandes d'inscription, assiduité, suivi de progression, tests pytest
+- Terminé côté front-end (HTML et JavaScript natif, dossier `frontend/`) : connexion, liste des cours avec demande d'inscription, validation des inscriptions par le staff
+- Reste possible si le temps le permet : affichage de l'assiduité et de la progression dans le front, lien parent-élève
+- Améliorations après le MVP : migrations avec Alembic, chargement automatique du fichier `.env`, remplacement de `datetime.utcnow()`
 
 ## Auteur
 
