@@ -4,6 +4,7 @@ from app.models.course import Course, CourseSession
 from app.models.registration import EnrollmentRequest
 from app.models.attendance import AttendanceRecord
 from app.models.progress import ProgressRecord
+from app.models.parent_student import ParentStudent
 
 __all__ = [
     "Base",
@@ -13,4 +14,5 @@ __all__ = [
     "EnrollmentRequest",
     "AttendanceRecord",
     "ProgressRecord",
+    "ParentStudent",
 ]
