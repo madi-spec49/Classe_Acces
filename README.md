@@ -22,7 +22,7 @@ Plateforme de cours à distance le week-end pour une association scolaire : envi
 - Création et consultation des cours et sessions
 - Demandes d'inscription et validation par le staff
 - Saisie de l'assiduité par les professeurs
-- Suivi de la progression des élèves
+- Suivi de la progression des élèves, consultable par l'élève, son parent lié et le staff
 
 Sont reportés en phase future : les signalements d'absence, la messagerie et le paiement HelloAsso. Voir [`docs/7. Roadmap Phase Future.md`](docs/7.%20Roadmap%20Phase%20Future.md).
 
@@ -58,13 +58,14 @@ school-assoc/
 │   ├── courses.html        # Liste des cours et demande d'inscription (élève)
 │   └── staff.html          # Validation des inscriptions (staff)
 ├── tests/
-│   ├── conftest.py         # Base de test et client partagés
-│   ├── test_auth.py        # Inscription, connexion, /me
-│   ├── test_staff.py       # Contrôle des rôles
-│   ├── test_courses.py     # Cours et sessions
+│   ├── conftest.py           # Base de test et client partagés
+│   ├── test_auth.py          # Inscription, connexion, /me
+│   ├── test_staff.py         # Contrôle des rôles
+│   ├── test_courses.py       # Cours et sessions
 │   ├── test_registrations.py # Demandes d'inscription
-│   ├── test_attendance.py  # Assiduité
-│   └── test_progress.py    # Suivi de progression
+│   ├── test_attendance.py    # Assiduité
+│   ├── test_progress.py      # Suivi de progression
+│   └── test_parents.py       # Comptes parents et lien parent-élève
 ├── docker-compose.yml      # Service PostgreSQL
 ├── requirements.txt        # Dépendances Python
 ├── .env.example            # Modèle de variables d'environnement
@@ -143,6 +144,8 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/auth/login` | Public | Connecte un utilisateur et renvoie un token |
 | GET | `/api/auth/me` | Utilisateur connecté | Renvoie le profil de l'utilisateur courant |
 | POST | `/api/staff/teachers` | Staff | Crée un compte professeur |
+| POST | `/api/parents` | Staff | Crée un compte parent |
+| POST | `/api/parents/{parent_id}/students/{student_id}` | Staff | Relie un parent à un élève |
 | POST | `/api/courses` | Staff | Crée un cours |
 | GET | `/api/courses` | Utilisateur connecté | Liste les cours |
 | POST | `/api/courses/{course_id}/sessions` | Staff | Crée une session de cours |
@@ -153,7 +156,7 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/sessions/{session_id}/attendance` | Professeur du cours | Enregistre une présence |
 | GET | `/api/sessions/{session_id}/attendance` | Staff ou professeur du cours | Liste les présences d'une session |
 | POST | `/api/progress` | Professeur du cours | Enregistre une progression |
-| GET | `/api/progress/students/{student_id}` | L'élève concerné ou le staff | Liste la progression d'un élève |
+| GET | `/api/progress/students/{student_id}` | L'élève, son parent lié ou le staff | Liste la progression d'un élève |
 | GET | `/health` | Public | Vérifie que l'API répond |
 
 Les routes protégées attendent un header `Authorization: Bearer <token>`. Le token est renvoyé par `register` ou `login`.
@@ -171,7 +174,7 @@ Exemple d'inscription :
 }
 ```
 
-L'inscription ne permet pas de choisir son rôle : tout compte créé par cette route est un élève.
+L'inscription ne permet pas de choisir son rôle : tout compte créé par cette route est un élève. Les comptes professeur et parent sont créés par le staff.
 
 ## Tests
 
@@ -181,7 +184,7 @@ Les tests utilisent une base SQLite en mémoire, séparée de la base PostgreSQL
 python -m pytest -v
 ```
 
-Les 36 tests couvrent l'authentification, le contrôle des rôles, les cours et sessions, les demandes d'inscription, l'assiduité et le suivi de progression.
+Les 42 tests couvrent l'authentification, le contrôle des rôles, les cours et sessions, les demandes d'inscription, l'assiduité, le suivi de progression et le lien parent-élève.
 
 ## Documentation
 
@@ -217,10 +220,9 @@ Cycle de travail : une branche `feature/*` est créée depuis `develop`, le trav
 
 ## Statut
 
-- Terminé côté API : authentification et rôles, cours et sessions, demandes d'inscription, assiduité, suivi de progression, tests pytest
+- Terminé côté API : authentification et rôles, comptes parents et lien parent-élève, cours et sessions, demandes d'inscription, assiduité, suivi de progression, tests pytest
 - Terminé côté front-end (HTML et JavaScript natif, dossier `frontend/`) : connexion, liste des cours avec demande d'inscription, validation des inscriptions par le staff
-- Reste possible si le temps le permet : affichage de l'assiduité et de la progression dans le front, lien parent-élève
-- Améliorations après le MVP : migrations avec Alembic, chargement automatique du fichier `.env`, remplacement de `datetime.utcnow()`
+- Améliorations après le MVP : affichage de l'assiduité et de la progression dans le front, migrations avec Alembic, chargement automatique du fichier `.env`, remplacement de `datetime.utcnow()` dans les bibliothèques
 
 ## Auteur
 
