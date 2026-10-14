@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 360px; margin: 60px auto; padding: 0 16px; }
+    label { display: block; margin-top: 12px; }
+    input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 16px; width: 100%; padding: 10px; cursor: pointer; }
+    #message { margin-top: 12px; color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Connexion</h1>
+  <form id="login-form">
+    <label>Email <input type="email" id="email" required></label>
+    <label>Mot de passe <input type="password" id="password" required></label>
+    <button type="submit">Se connecter</button>
+  </form>
+  <p id="message"></p>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    document.getElementById("login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = document.getElementById("message");
+      message.textContent = "";
+
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value,
+        }),
+      });
+
+      if (!response.ok) {
+        message.textContent = "Email ou mot de passe incorrect.";
+        return;
+      }
+
+      const data = await response.json();
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("role", data.user.role);
+      message.textContent = "Connecté. Token enregistré.";
+    });
+  </script>
+</body>
+</html>
