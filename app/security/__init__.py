@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -19,7 +19,7 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 
 
 def create_access_token(user_id: int, email: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=EXPIRATION_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=EXPIRATION_MINUTES)
     payload = {
         "sub": str(user_id),
         "email": email,
