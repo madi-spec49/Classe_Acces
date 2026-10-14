@@ -46,7 +46,12 @@
       const data = await response.json();
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("role", data.user.role);
-      window.location.href = "courses.html";
+
+      if (data.user.role === "staff") {
+        window.location.href = "staff.html";
+      } else {
+        window.location.href = "courses.html";
+      }
     });
   </script>
 </body>

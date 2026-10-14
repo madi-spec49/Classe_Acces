@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validation des inscriptions</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+    .request { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin-top: 12px; }
+    button { padding: 6px 12px; cursor: pointer; margin-top: 8px; margin-right: 8px; }
+    #message { margin-top: 12px; color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Demandes d'inscription en attente</h1>
+  <button id="logout">Se déconnecter</button>
+  <div id="requests"></div>
+  <p id="message"></p>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const message = document.getElementById("message");
+
+    if (!token || role !== "staff") {
+      window.location.href = "login.html";
+    }
+
+    async function loadRequests() {
+      const response = await fetch(`${API_URL}/api/registrations?status=pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.clear();
+        window.location.href = "login.html";
+        return;
+      }
+
+      const requests = await response.json();
+      const container = document.getElementById("requests");
+      container.innerHTML = "";
+
+      if (requests.length === 0) {
+        container.textContent = "Aucune demande en attente.";
+        return;
+      }
+
+      requests.forEach((request) => {
+        const div = document.createElement("div");
+        div.className = "request";
+
+        const info = document.createElement("p");
+        info.textContent = `Élève n° ${request.student_id} - cours n° ${request.course_id}`;
+
+        const validate = document.createElement("button");
+        validate.textContent = "Valider";
+        validate.addEventListener("click", () => decide(request.id, "approved"));
+
+        const refuse = document.createElement("button");
+        refuse.textContent = "Refuser";
+        refuse.addEventListener("click", () => decide(request.id, "rejected"));
+
+        div.append(info, validate, refuse);
+        container.append(div);
+      });
+    }
+
+    async function decide(requestId, status) {
+      const response = await fetch(`${API_URL}/api/registrations/${requestId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: status }),
+      });
+
+      if (response.ok) {
+        message.textContent = "";
+        loadRequests();
+      } else {
+        const data = await response.json();
+        message.textContent = data.detail || "Erreur, réessaie.";
+      }
+    }
+
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    loadRequests();
+  </script>
+</body>
+</html>
