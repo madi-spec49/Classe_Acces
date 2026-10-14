@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import engine
 from app.models import Base
-from app.routes import auth, staff, courses, registrations, attendance, progress
+from app.routes import auth, staff, courses, registrations, attendance, progress, parents
 
 app = FastAPI(title="My FastAPI Application")
 
@@ -22,6 +22,7 @@ app.include_router(courses.router)
 app.include_router(registrations.router)
 app.include_router(attendance.router)
 app.include_router(progress.router)
+app.include_router(parents.router)
 
 
 @app.get("/health")

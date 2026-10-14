@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import Course, EnrollmentRequest, ProgressRecord, User
+from app.models import Course, EnrollmentRequest, ParentStudent, ProgressRecord, User
 from app.schemas.progress import ProgressCreate, ProgressResponse
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
@@ -52,8 +52,17 @@ def list_student_progress(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    if user.role != "staff" and user.id != student_id:
+    if user.role == "staff" or user.id == student_id:
+        allowed = True
+    elif user.role == "parent":
+        link = db.get(ParentStudent, (user.id, student_id))
+        allowed = link is not None
+    else:
+        allowed = False
+
+    if not allowed:
         raise HTTPException(status_code=403, detail="Access denied")
+
     return (
         db.query(ProgressRecord)
         .filter(ProgressRecord.student_id == student_id)
