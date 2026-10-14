@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cours</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+    .course { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin-top: 12px; }
+    button { padding: 6px 12px; cursor: pointer; margin-top: 8px; }
+    #message { margin-top: 12px; color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Cours disponibles</h1>
+  <button id="logout">Se déconnecter</button>
+  <div id="courses"></div>
+  <p id="message"></p>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const message = document.getElementById("message");
+    const jours = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+    if (!token) {
+      window.location.href = "login.html";
+    }
+
+    async function loadCourses() {
+      const response = await fetch(`${API_URL}/api/courses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.clear();
+        window.location.href = "login.html";
+        return;
+      }
+
+      const courses = await response.json();
+      const container = document.getElementById("courses");
+      container.innerHTML = "";
+
+      courses.forEach((course) => {
+        const div = document.createElement("div");
+        div.className = "course";
+
+        const title = document.createElement("strong");
+        title.textContent = course.title;
+
+        const info = document.createElement("p");
+        info.textContent = `${course.subject} - ${jours[course.day_of_week]}, de ${course.start_time.slice(0, 5)} à ${course.end_time.slice(0, 5)}`;
+
+        div.append(title, info);
+
+        if (role === "student") {
+          const button = document.createElement("button");
+          button.textContent = "Demander l'inscription";
+          button.addEventListener("click", () => requestEnrollment(course.id));
+          div.append(button);
+        }
+
+        container.append(div);
+      });
+    }
+
+    async function requestEnrollment(courseId) {
+      const response = await fetch(`${API_URL}/api/registrations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ course_id: courseId }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        message.textContent = "Demande envoyée. Le staff doit la valider.";
+      } else {
+        message.textContent = data.detail || "Erreur, réessaie.";
+      }
+    }
+
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    loadCourses();
+  </script>
+</body>
+</html>

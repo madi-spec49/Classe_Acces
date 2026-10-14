@@ -46,7 +46,7 @@
       const data = await response.json();
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("role", data.user.role);
-      message.textContent = "Connecté. Token enregistré.";
+      window.location.href = "courses.html";
     });
   </script>
 </body>
