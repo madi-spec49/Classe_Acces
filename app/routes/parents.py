@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.config import get_db
-from app.dependencies import require_role
+from app.dependencies import get_current_user, require_role
 from app.models import ParentStudent, User
 from app.schemas.auth import UserRegister, UserResponse
 from app.security import hash_password
@@ -54,3 +54,21 @@ def link_parent_to_student(
         db.commit()
 
     return {"parent_id": parent_id, "student_id": student_id}
+
+
+@router.get("/me/children")
+def list_my_children(
+    db: Session = Depends(get_db),
+    parent: User = Depends(require_role("parent")),
+):
+    children = (
+        db.query(User)
+        .join(ParentStudent, ParentStudent.student_id == User.id)
+        .filter(ParentStudent.parent_id == parent.id)
+        .order_by(User.last_name, User.first_name)
+        .all()
+    )
+    return [
+        {"id": c.id, "first_name": c.first_name, "last_name": c.last_name, "level": c.level}
+        for c in children
+    ]
