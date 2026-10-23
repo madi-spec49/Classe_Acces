@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Suivi : présences et progression | Classe Accès</title>
+  <meta name="description" content="Suivi des présences et de la progression sur Classe Accès." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
+</head>
+<body>
+  <header class="topnav">
+    <nav class="container topnav-inner" aria-label="Navigation principale">
+      <a class="brand" href="login.html">
+        <img src="logo.svg" alt="" width="32" height="32" />
+        <span class="logo">Classe Accès</span>
+      </a>
+      <button class="btn btn-secondary btn-small" type="button" id="logout">Se déconnecter</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="screen is-active">
+      <div class="screen-head">
+        <p class="eyebrow" id="retour-zone"></p>
+        <h1 id="titre">Mon suivi</h1>
+        <p class="lead">Vos présences aux séances et votre progression.</p>
+      </div>
+
+      <div id="flash"></div>
+
+      <div class="section-head"><h2>Présences</h2><span class="count" id="compte-presences"></span></div>
+      <div class="card" style="padding: 0 24px;">
+        <div class="list-rows" id="presences"></div>
+      </div>
+
+      <div class="section-head" style="margin-top: 44px;"><h2>Progression</h2><span class="count" id="compte-progression"></span></div>
+      <div class="card" style="padding: 0 24px;">
+        <div class="list-rows" id="progression"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container row-between">
+      <span>© 2026 Classe Accès · Association scolaire</span>
+      <span class="meta">Cours le vendredi soir, le samedi et le dimanche</span>
+    </div>
+  </footer>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+    const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
+    const token = localStorage.getItem("token");
+    const $ = (id) => document.getElementById(id);
+
+    const esc = (texte) => String(texte ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+
+    const STATUTS = { present: "Présent", absent: "Absent", late: "En retard" };
+    const STATUT_CLASSE = { present: "badge-ok", absent: "badge-attente", late: "badge-attente" };
+
+    function message(texte) {
+      const flash = $("flash");
+      flash.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "banner";
+      div.style.color = "var(--danger)";
+      div.textContent = texte;
+      flash.append(div);
+    }
+
+    function deconnexion() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    async function appel(url) {
+      const reponse = await fetch(`${API_URL}${url}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (reponse.status === 401) {
+        deconnexion();
+        return { ok: false, status: 401, data: null };
+      }
+      let data = null;
+      try { data = await reponse.json(); } catch (erreur) {}
+      return { ok: reponse.ok, status: reponse.status, data };
+    }
+
+    function ligne(titre, sousTitre, badge) {
+      const div = document.createElement("div");
+      div.className = "row-item";
+      div.innerHTML = `
+        <span class="who">
+          <span class="name">${titre}</span>
+          <span class="sub">${sousTitre}</span>
+        </span>
+        <span class="card-actions">${badge}</span>`;
+      return div;
+    }
+
+    async function charger() {
+      if (!token) { window.location.href = "login.html"; return; }
+      const me = await appel("/api/auth/me");
+      if (me.status === 401) return;
+      if (!me.ok) { message(MSG_SERVEUR); return; }
+
+      // Élève : son propre suivi. Parent : le suivi de l'enfant choisi (?id=...)
+      const idUrl = new URLSearchParams(window.location.search).get("id");
+      const id = idUrl || me.data.id;
+
+      if (me.data.role === "parent") {
+        $("retour-zone").innerHTML = '<a href="parent.html">← Retour à mes enfants</a>';
+      } else {
+        $("retour-zone").innerHTML = '<a href="courses.html">← Retour aux cours</a>';
+      }
+
+      const presences = await appel(`/api/students/${id}/attendance`);
+      if (presences.status === 401) return;
+      if (!presences.ok) {
+        message("Vous n’avez pas accès au suivi de cet élève.");
+        return;
+      }
+      $("compte-presences").textContent = `${presences.data.length} séance(s)`;
+      const zonePresences = $("presences");
+      if (presences.data.length === 0) {
+        zonePresences.innerHTML = '<div class="empty" style="border: none;">Aucune présence enregistrée.</div>';
+      } else {
+        presences.data.forEach((p) => {
+          const date = new Date(p.date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
+          const badge = `<span class="badge ${STATUT_CLASSE[p.status] || ""}">${esc(STATUTS[p.status] || p.status)}</span>`;
+          zonePresences.append(ligne(esc(p.subject), `${esc(date)} · ${esc(p.title)}`, badge));
+        });
+      }
+
+      const progression = await appel(`/api/progress/students/${id}`);
+      if (progression.status === 401) return;
+      const cours = await appel("/api/courses");
+      const nomCours = {};
+      if (cours.ok) cours.data.forEach((c) => { nomCours[c.id] = `${c.subject} : ${c.title}`; });
+
+      const zoneProgression = $("progression");
+      if (!progression.ok) {
+        message("Impossible de charger la progression.");
+        return;
+      }
+      $("compte-progression").textContent = `${progression.data.length} enregistrement(s)`;
+      if (progression.data.length === 0) {
+        zoneProgression.innerHTML = '<div class="empty" style="border: none;">Aucune progression enregistrée.</div>';
+      } else {
+        progression.data.forEach((g) => {
+          const date = new Date(g.date).toLocaleDateString("fr-FR", { dateStyle: "medium" });
+          const sousTitre = `${esc(date)}${g.note ? " · " + esc(g.note) : ""}`;
+          zoneProgression.append(ligne(esc(nomCours[g.course_id] || "Cours"), sousTitre, `<span class="badge">${esc(g.level)}</span>`));
+        });
+      }
+    }
+
+    $("logout").addEventListener("click", deconnexion);
+    charger();
+  </script>
+</body>
+</html>

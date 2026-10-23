@@ -1,97 +1,418 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Validation des inscriptions</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
-    .request { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin-top: 12px; }
-    button { padding: 6px 12px; cursor: pointer; margin-top: 8px; margin-right: 8px; }
-    #message { margin-top: 12px; color: #b00020; }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Espace staff : gérer les cours en ligne | Classe Accès</title>
+  <meta name="description" content="Espace réservé au staff : créez les comptes professeurs, suivez l'activité et gérez les cours de l'association Classe Accès en toute simplicité." />
+  <meta property="og:title" content="Espace staff : gérer les cours en ligne | Classe Accès" />
+  <meta property="og:description" content="Espace réservé au staff : créez les comptes professeurs, suivez l'activité et gérez les cours de l'association Classe Accès en toute simplicité." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Classe Accès" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
 </head>
 <body>
-  <h1>Demandes d'inscription en attente</h1>
-  <button id="logout">Se déconnecter</button>
-  <div id="requests"></div>
-  <p id="message"></p>
+  <header class="topnav">
+    <nav class="container topnav-inner" aria-label="Navigation principale">
+      <a class="brand" href="login.html">
+        <img src="logo.svg" alt="" width="32" height="32" />
+        <span class="logo">Classe Accès</span>
+      </a>
+      <button class="btn btn-secondary btn-small" type="button" id="logout">Se déconnecter</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="screen is-active">
+      <div class="screen-head">
+        <p class="eyebrow">Espace staff</p>
+        <h1>Gestion de la plateforme</h1>
+        <p class="lead">Créez les comptes et les cours, et rattachez les parents à leurs enfants.</p>
+      </div>
+
+      <div id="flash"></div>
+
+      <div class="section-head" style="margin-top: 44px;"><h2>Créer un compte</h2></div>
+      <div class="grid-2">
+        <form class="card stack" id="form-prof">
+          <h3>Compte professeur</h3>
+          <div class="form-grid">
+            <div class="field"><label for="prof-prenom">Prénom</label><input class="input" id="prof-prenom" required /></div>
+            <div class="field"><label for="prof-nom">Nom</label><input class="input" id="prof-nom" required /></div>
+          </div>
+          <div class="field"><label for="prof-email">Email</label><input class="input" id="prof-email" type="email" required /></div>
+          <div class="field"><label for="prof-pass">Mot de passe</label><input class="input" id="prof-pass" type="password" required /></div>
+          <div><button class="btn btn-primary" type="submit">Créer le compte professeur</button></div>
+        </form>
+
+        <form class="card stack" id="form-parent">
+          <h3>Compte parent</h3>
+          <div class="form-grid">
+            <div class="field"><label for="parent-prenom">Prénom</label><input class="input" id="parent-prenom" required /></div>
+            <div class="field"><label for="parent-nom">Nom</label><input class="input" id="parent-nom" required /></div>
+          </div>
+          <div class="field"><label for="parent-email">Email</label><input class="input" id="parent-email" type="email" required /></div>
+          <div class="field"><label for="parent-pass">Mot de passe</label><input class="input" id="parent-pass" type="password" required /></div>
+          <div class="field"><label for="parent-recherche">Rechercher un élève</label><input class="input" id="parent-recherche" type="search" placeholder="Tape un nom…" /></div>
+          <div id="parent-resultats"></div>
+          <p class="meta" id="parent-choix">Aucun élève choisi</p>
+          <input type="hidden" id="parent-enfant" />
+          <div><button class="btn btn-primary" type="submit">Créer et rattacher</button></div>
+        </form>
+      </div>
+
+      <form class="card stack" id="form-eleve" style="margin-top: 24px;">
+        <h3>Compte élève</h3>
+        <div class="form-grid">
+          <div class="field"><label for="eleve-prenom">Prénom</label><input class="input" id="eleve-prenom" required /></div>
+          <div class="field"><label for="eleve-nom">Nom</label><input class="input" id="eleve-nom" required /></div>
+        </div>
+        <div class="field"><label for="eleve-email">Email</label><input class="input" id="eleve-email" type="email" required /></div>
+        <div class="field">
+          <label for="eleve-niveau">Niveau</label>
+          <select class="input" id="eleve-niveau" required>
+            <option value="debutant">Débutant</option>
+            <option value="intermediaire">Intermédiaire</option>
+            <option value="avance">Avancé</option>
+          </select>
+        </div>
+        <div class="field"><label for="eleve-pass">Mot de passe</label><input class="input" id="eleve-pass" type="password" required /></div>
+        <div><button class="btn btn-primary" type="submit">Créer le compte élève</button></div>
+      </form>
+
+      <form class="card stack" id="form-cours" style="margin-top: 24px;">
+        <h3>Nouveau cours</h3>
+        <div class="form-grid">
+          <div class="field"><label for="cours-matiere">Matière</label><input class="input" id="cours-matiere" required placeholder="Ex. : Mathématiques" /></div>
+          <div class="field">
+            <label for="cours-jour">Jour</label>
+            <select class="input" id="cours-jour">
+              <option value="0">Lundi</option>
+              <option value="1">Mardi</option>
+              <option value="2">Mercredi</option>
+              <option value="3">Jeudi</option>
+              <option value="4">Vendredi</option>
+              <option value="5" selected>Samedi</option>
+              <option value="6">Dimanche</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label for="cours-titre">Titre</label><input class="input" id="cours-titre" required placeholder="Ex. : Analyse : limites et dérivées" /></div>
+        <div class="field">
+          <label for="cours-niveau">Niveau</label>
+          <select class="input" id="cours-niveau" required>
+            <option value="debutant">Débutant</option>
+            <option value="intermediaire">Intermédiaire</option>
+            <option value="avance">Avancé</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label for="cours-debut">Heure de début</label><input class="input" id="cours-debut" type="time" value="10:00" required /></div>
+          <div class="field"><label for="cours-fin">Heure de fin</label><input class="input" id="cours-fin" type="time" value="12:00" required /></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label for="cours-prof">Professeur</label><select class="input" id="cours-prof" required></select></div>
+          <div class="field"><label for="cours-zoom">Lien Zoom</label><input class="input" id="cours-zoom" type="url" required placeholder="https://zoom.us/j/..." /></div>
+        </div>
+        <div><button class="btn btn-primary" type="submit">Créer le cours</button></div>
+      </form>
+      <form class="card stack" id="form-mdp" style="margin-top: 24px;">
+        <h3>Réinitialiser un mot de passe</h3>
+        <div class="field"><label for="mdp-recherche">Rechercher un compte</label><input class="input" id="mdp-recherche" type="search" placeholder="Tape un nom…" /></div>
+        <div id="mdp-resultats"></div>
+        <p class="meta" id="mdp-choix">Aucun compte choisi</p>
+        <input type="hidden" id="mdp-compte" />
+        <div class="field"><label for="mdp-nouveau">Nouveau mot de passe</label><input class="input" id="mdp-nouveau" type="password" required /></div>
+        <div><button class="btn btn-primary" type="submit">Réinitialiser le mot de passe</button></div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container row-between">
+      <span>© 2026 Classe Accès · Association scolaire</span>
+      <span class="meta">Cours le vendredi soir, samedi et le dimanche</span>
+    </div>
+  </footer>
 
   <script>
     const API_URL = "http://127.0.0.1:8000";
+    const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    const message = document.getElementById("message");
+    const $ = (id) => document.getElementById(id);
 
-    if (!token || role !== "staff") {
-      window.location.href = "login.html";
+    const ERREURS = {
+      "Email already registered": "Cet email est déjà utilisé.",
+      "Student not found": "Élève introuvable. Vérifie l’identifiant.",
+      "Parent not found": "Parent introuvable.",
+      "teacher_id must be a teacher account": "Cet identifiant n’est pas celui d’un professeur."
+    };
+
+    function message(texte, ok = false) {
+      const flash = $("flash");
+      flash.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "banner" + (ok ? " banner-ok" : "");
+      if (!ok) div.style.color = "var(--danger)";
+      div.textContent = texte;
+      flash.append(div);
+      flash.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    async function loadRequests() {
-      const response = await fetch(`${API_URL}/api/registrations?status=pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = "login.html";
-        return;
-      }
-
-      const requests = await response.json();
-      const container = document.getElementById("requests");
-      container.innerHTML = "";
-
-      if (requests.length === 0) {
-        container.textContent = "Aucune demande en attente.";
-        return;
-      }
-
-      requests.forEach((request) => {
-        const div = document.createElement("div");
-        div.className = "request";
-
-        const info = document.createElement("p");
-        info.textContent = `Élève n° ${request.student_id} - cours n° ${request.course_id}`;
-
-        const validate = document.createElement("button");
-        validate.textContent = "Valider";
-        validate.addEventListener("click", () => decide(request.id, "approved"));
-
-        const refuse = document.createElement("button");
-        refuse.textContent = "Refuser";
-        refuse.addEventListener("click", () => decide(request.id, "rejected"));
-
-        div.append(info, validate, refuse);
-        container.append(div);
-      });
+    function libelle(r) {
+      if (r.status === 422) return "Données invalides, vérifie les champs.";
+      if (r.data && typeof r.data.detail === "string" && ERREURS[r.data.detail]) return ERREURS[r.data.detail];
+      return "Une erreur est survenue, réessaie.";
     }
 
-    async function decide(requestId, status) {
-      const response = await fetch(`${API_URL}/api/registrations/${requestId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: status }),
-      });
-
-      if (response.ok) {
-        message.textContent = "";
-        loadRequests();
-      } else {
-        const data = await response.json();
-        message.textContent = data.detail || "Erreur, réessaie.";
-      }
-    }
-
-    document.getElementById("logout").addEventListener("click", () => {
+    function deconnexion() {
       localStorage.clear();
       window.location.href = "login.html";
+    }
+
+    async function appel(url, options = {}) {
+      const reponse = await fetch(`${API_URL}${url}`, {
+        method: options.method || "GET",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: options.body,
+      });
+      if (reponse.status === 401) {
+        deconnexion();
+        return { ok: false, status: 401, data: null };
+      }
+      let data = null;
+      try { data = await reponse.json(); } catch (erreur) {}
+      return { ok: reponse.ok, status: reponse.status, data };
+    }
+
+    function esc(texte) {
+      const div = document.createElement("div");
+      div.textContent = texte;
+      return div.innerHTML;
+    }
+
+    let tousLesEleves = [];
+
+    function afficherEleves() {
+      const recherche = $("parent-recherche").value.trim().toLowerCase();
+      const zone = $("parent-resultats");
+      if (recherche === "") { zone.innerHTML = ""; return; }
+      const filtres = tousLesEleves
+        .filter((e) => `${e.first_name} ${e.last_name}`.toLowerCase().includes(recherche))
+        .slice(0, 8);
+      zone.innerHTML = filtres.length === 0
+        ? '<p class="meta">Aucun élève trouvé.</p>'
+        : filtres
+            .map((e) => `<button class="btn btn-secondary btn-small" type="button" data-id="${e.id}" style="margin: 4px 6px 0 0;">${esc(e.first_name)} ${esc(e.last_name)}</button>`)
+            .join("");
+      zone.querySelectorAll("button").forEach((bouton) =>
+        bouton.addEventListener("click", () => {
+          $("parent-enfant").value = bouton.dataset.id;
+          $("parent-choix").textContent = "Élève choisi : " + bouton.textContent;
+        })
+      );
+    }
+
+    async function chargerEleves() {
+      const r = await appel("/api/staff/students");
+      if (r.status === 401) return;
+      if (!r.ok) { message(libelle(r)); return; }
+      tousLesEleves = r.data;
+      afficherEleves();
+    }
+
+    $("parent-recherche").addEventListener("input", afficherEleves);
+
+    async function chargerProfesseurs() {
+      const r = await appel("/api/staff/teachers");
+      if (r.status === 401) return;
+      if (!r.ok) { message(libelle(r)); return; }
+      $("cours-prof").innerHTML = r.data
+        .map((t) => `<option value="${t.id}">${esc(t.first_name)} ${esc(t.last_name)}</option>`)
+        .join("");
+    }
+
+    $("form-prof").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const r = await appel("/api/staff/teachers", {
+          method: "POST",
+          body: JSON.stringify({
+            first_name: $("prof-prenom").value,
+            last_name: $("prof-nom").value,
+            email: $("prof-email").value,
+            password: $("prof-pass").value,
+          }),
+        });
+        if (r.status === 401) return;
+        if (!r.ok) { message(libelle(r)); return; }
+        event.target.reset();
+        message("Compte professeur créé.", true);
+        chargerProfesseurs();
+        chargerComptes();
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
     });
 
-    loadRequests();
+    $("form-eleve").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const r = await appel("/api/staff/students", {
+          method: "POST",
+          body: JSON.stringify({
+            first_name: $("eleve-prenom").value,
+            last_name: $("eleve-nom").value,
+            email: $("eleve-email").value,
+            password: $("eleve-pass").value,
+            level: $("eleve-niveau").value,
+          }),
+        });
+        if (r.status === 401) return;
+        if (!r.ok) { message(libelle(r)); return; }
+        event.target.reset();
+        message("Compte élève créé.", true);
+        chargerEleves();
+        chargerComptes();
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
+    });
+
+    $("form-parent").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!$("parent-enfant").value) {
+        message("Choisis un élève dans les résultats de la recherche.");
+        return;
+      }
+      try {
+        const creation = await appel("/api/parents", {
+          method: "POST",
+          body: JSON.stringify({
+            first_name: $("parent-prenom").value,
+            last_name: $("parent-nom").value,
+            email: $("parent-email").value,
+            password: $("parent-pass").value,
+          }),
+        });
+        if (creation.status === 401) return;
+        if (!creation.ok) { message(libelle(creation)); return; }
+
+        const lien = await appel(`/api/parents/${creation.data.id}/students/${$("parent-enfant").value}`, {
+          method: "POST",
+        });
+        if (lien.status === 401) return;
+        if (!lien.ok) {
+          message("Compte parent créé, mais le rattachement a échoué. " + libelle(lien));
+          return;
+        }
+        event.target.reset();
+        $("parent-enfant").value = "";
+        $("parent-resultats").innerHTML = "";
+        $("parent-choix").textContent = "Aucun élève choisi";
+        message("Compte parent créé et rattaché à l’élève.", true);
+        chargerEleves();
+        chargerComptes();
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
+    });
+
+    $("form-cours").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const r = await appel("/api/courses", {
+          method: "POST",
+          body: JSON.stringify({
+            teacher_id: Number($("cours-prof").value),
+            title: $("cours-titre").value,
+            subject: $("cours-matiere").value,
+            day_of_week: Number($("cours-jour").value),
+            start_time: $("cours-debut").value,
+            end_time: $("cours-fin").value,
+            zoom_link: $("cours-zoom").value,
+            level: $("cours-niveau").value,
+          }),
+        });
+        if (r.status === 401) return;
+        if (!r.ok) { message(libelle(r)); return; }
+        event.target.reset();
+        $("cours-jour").value = "5";
+        $("cours-debut").value = "10:00";
+        $("cours-fin").value = "12:00";
+        message("Cours créé.", true);
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
+    });
+
+    let tousLesComptes = [];
+    const LIBELLES_ROLE = { teacher: "Professeur", student: "Élève", parent: "Parent" };
+
+    function afficherComptes() {
+      const recherche = $("mdp-recherche").value.trim().toLowerCase();
+      const zone = $("mdp-resultats");
+      if (recherche === "") { zone.innerHTML = ""; return; }
+      const filtres = tousLesComptes
+        .filter((c) => `${c.first_name} ${c.last_name}`.toLowerCase().includes(recherche))
+        .slice(0, 8);
+      zone.innerHTML = filtres.length === 0
+        ? '<p class="meta">Aucun compte trouvé.</p>'
+        : filtres
+            .map((c) => `<button class="btn btn-secondary btn-small" type="button" data-id="${c.id}" style="margin: 4px 6px 0 0;">${esc(c.first_name)} ${esc(c.last_name)} (${LIBELLES_ROLE[c.role] || esc(c.role)})</button>`)
+            .join("");
+      zone.querySelectorAll("button").forEach((bouton) =>
+        bouton.addEventListener("click", () => {
+          $("mdp-compte").value = bouton.dataset.id;
+          $("mdp-choix").textContent = "Compte choisi : " + bouton.textContent;
+        })
+      );
+    }
+
+    async function chargerComptes() {
+      const r = await appel("/api/staff/users");
+      if (r.status === 401) return;
+      if (!r.ok) { message(libelle(r)); return; }
+      tousLesComptes = r.data;
+      afficherComptes();
+    }
+
+    $("mdp-recherche").addEventListener("input", afficherComptes);
+
+    $("form-mdp").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!$("mdp-compte").value) {
+        message("Choisis un compte dans les résultats de la recherche.");
+        return;
+      }
+      try {
+        const r = await appel(`/api/staff/users/${$("mdp-compte").value}/password`, {
+          method: "POST",
+          body: JSON.stringify({ password: $("mdp-nouveau").value }),
+        });
+        if (r.status === 401) return;
+        if (!r.ok) { message(libelle(r)); return; }
+        event.target.reset();
+        $("mdp-compte").value = "";
+        $("mdp-resultats").innerHTML = "";
+        $("mdp-choix").textContent = "Aucun compte choisi";
+        message("Mot de passe réinitialisé.", true);
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
+    });
+
+    $("logout").addEventListener("click", deconnexion);
+
+    if (token && role === "staff") {
+      chargerProfesseurs();
+      chargerEleves();
+      chargerComptes();
+    } else {
+      window.location.href = "login.html";
+    }
   </script>
 </body>
 </html>

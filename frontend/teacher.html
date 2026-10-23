@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Espace professeur : appel et progression | Classe Accès</title>
+  <meta name="description" content="Espace professeur de Classe Accès : consultez vos cours, faites l'appel et saisissez la progression de vos élèves." />
+  <meta property="og:title" content="Espace professeur : appel et progression | Classe Accès" />
+  <meta property="og:description" content="Espace professeur de Classe Accès : consultez vos cours, faites l'appel et saisissez la progression de vos élèves." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Classe Accès" />
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topnav">
+    <nav class="container topnav-inner" aria-label="Navigation principale">
+      <a class="brand" href="login.html">
+        <img src="logo.svg" alt="" width="32" height="32" />
+        <span class="logo">Classe Accès</span>
+      </a>
+      <button class="btn btn-secondary btn-small" type="button" id="logout">Se déconnecter</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="screen is-active">
+      <div class="screen-head">
+        <p class="eyebrow">Espace professeur</p>
+        <h1>Mes cours</h1>
+        <p class="lead">Faites l'appel à chaque session et saisissez la progression de vos élèves.</p>
+      </div>
+
+      <div id="flash"></div>
+
+      <div id="cours" class="bento"></div>
+
+      <div class="section-head" style="margin-top: 44px;"><h2>Nouvelle séance</h2></div>
+      <form class="card stack" id="form-seance">
+        <div class="form-grid">
+          <div class="field"><label for="seance-cours">Cours</label><select class="input" id="seance-cours" required></select></div>
+          <div class="field"><label for="seance-date">Date et heure</label><input class="input" id="seance-date" type="datetime-local" required /></div>
+        </div>
+        <div><button class="btn btn-primary" type="submit">Créer la séance</button></div>
+      </form>
+
+      <div class="section-head" style="margin-top: 44px;"><h2>Saisir la progression</h2></div>
+      <form class="card stack" id="form-progression">
+        <div class="form-grid">
+          <div class="field"><label for="prog-cours">Cours</label><select class="input" id="prog-cours" required></select></div>
+          <div class="field"><label for="prog-eleve">Élève</label><select class="input" id="prog-eleve" required></select></div>
+        </div>
+        <div class="field"><label for="prog-niveau">Niveau</label><input class="input" id="prog-niveau" required placeholder="Ex. : Acquis, En progrès" /></div>
+        <div class="field"><label for="prog-note">Note (facultatif)</label><input class="input" id="prog-note" /></div>
+        <div><button class="btn btn-primary" type="submit">Enregistrer la progression</button></div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container row-between">
+      <span>© 2026 Classe Accès · Association scolaire</span>
+      <span class="meta">Cours le vendredi soir, samedi et le dimanche</span>
+    </div>
+  </footer>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+    const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
+    const token = localStorage.getItem("token");
+    const $ = (id) => document.getElementById(id);
+    const STATUTS = { present: "Présent", absent: "Absent", late: "En retard" };
+    let monId = null;
+
+    const ERREURS = {
+      "Student not found": "Élève introuvable. Vérifie l'identifiant.",
+      "Access denied": "Tu n'as pas accès à ce cours.",
+      "Email already registered": "Cet email est déjà utilisé."
+    };
+
+    function esc(texte) {
+      const div = document.createElement("div");
+      div.textContent = texte;
+      return div.innerHTML;
+    }
+
+    function message(texte, ok = false) {
+      const flash = $("flash");
+      flash.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "banner" + (ok ? " banner-ok" : "");
+      if (!ok) div.style.color = "var(--danger)";
+      div.textContent = texte;
+      flash.append(div);
+      flash.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function libelle(r) {
+      if (r.status === 422) return "Données invalides, vérifie les champs.";
+      if (r.data && typeof r.data.detail === "string" && ERREURS[r.data.detail]) return ERREURS[r.data.detail];
+      return "Une erreur est survenue, réessaie.";
+    }
+
+    function deconnexion() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    async function appel(url, options = {}) {
+      const reponse = await fetch(`${API_URL}${url}`, {
+        method: options.method || "GET",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: options.body,
+      });
+      if (reponse.status === 401) {
+        deconnexion();
+        return { ok: false, status: 401, data: null };
+      }
+      let data = null;
+      try { data = await reponse.json(); } catch (erreur) {}
+      return { ok: reponse.ok, status: reponse.status, data };
+    }
+
+    // Liste des élèves approuvés d'un cours
+    async function listeEleves(coursId) {
+      const r = await appel(`/api/courses/${coursId}/students`);
+      return r.ok ? r.data : [];
+    }
+
+    // Transforme la liste en options <option> : nom affiché, identifiant envoyé
+    function options(eleves) {
+      return eleves
+        .map((e) => `<option value="${e.id}">${esc(e.first_name)} ${esc(e.last_name)}</option>`)
+        .join("");
+    }
+
+    async function remplirEleves(coursId) {
+      $("prog-eleve").innerHTML = options(await listeEleves(coursId));
+    }
+
+    async function afficherAppel(sessionId, liste, noms) {
+      const r = await appel(`/api/sessions/${sessionId}/attendance`);
+      if (!r.ok) return;
+      liste.innerHTML = r.data
+        .map((a) => `<li>${esc(noms[a.student_id] || "Élève " + a.student_id)} : ${esc(STATUTS[a.status] || a.status)}</li>`)
+        .join("");
+    }
+
+    function blocSession(session, eleves) {
+      const bloc = document.createElement("div");
+      bloc.style.padding = "12px 0";
+      bloc.style.borderBottom = "1px solid var(--border)";
+      const noms = Object.fromEntries(eleves.map((e) => [e.id, `${e.first_name} ${e.last_name}`]));
+      const date = new Date(session.date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
+      bloc.innerHTML = `
+        <div><strong>${esc(date)}</strong></div>
+        <form class="row" style="flex-wrap: wrap; margin-top: 8px;">
+          <select class="input" required style="min-width: 180px;">${options(eleves)}</select>
+          <select class="input" required>
+            <option value="present">Présent</option>
+            <option value="absent">Absent</option>
+            <option value="late">En retard</option>
+          </select>
+          <button class="btn btn-secondary btn-small" type="submit">Enregistrer</button>
+        </form>
+        <button class="btn btn-secondary btn-small" type="button" data-tous style="margin-top: 8px;">Tous présents</button>
+        <ul class="meta" style="margin: 8px 0 0; padding-left: 18px;"></ul>`;
+
+      const liste = bloc.querySelector("ul");
+
+      bloc.querySelector("[data-tous]").addEventListener("click", async () => {
+        if (eleves.length === 0) { message("Aucun élève dans ce cours."); return; }
+        for (const eleve of eleves) {
+          const r = await appel(`/api/sessions/${session.id}/attendance`, {
+            method: "POST",
+            body: JSON.stringify({ student_id: eleve.id, status: "present" }),
+          });
+          if (r.status === 401) return;
+          if (!r.ok) { message(libelle(r)); return; }
+        }
+        message("Tous les élèves sont marqués présents.", true);
+        await afficherAppel(session.id, liste, noms);
+      });
+      bloc.querySelector("form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const [eleve, statut] = event.target.querySelectorAll("select");
+        const r = await appel(`/api/sessions/${session.id}/attendance`, {
+          method: "POST",
+          body: JSON.stringify({ student_id: Number(eleve.value), status: statut.value }),
+        });
+        if (r.status === 401) return;
+        if (!r.ok) { message(libelle(r)); return; }
+        message("Présence enregistrée.", true);
+        await afficherAppel(session.id, liste, noms);
+      });
+
+      afficherAppel(session.id, liste, noms);
+      return bloc;
+    }
+
+    async function carteCours(cours) {
+      const carte = document.createElement("article");
+      carte.className = "card";
+      carte.innerHTML = `<h3>${esc(cours.subject)}</h3><p class="meta">${esc(cours.title)}</p><div class="sessions"></div>`;
+      const zone = carte.querySelector(".sessions");
+      const r = await appel(`/api/courses/${cours.id}/sessions`);
+      if (!r.ok) { zone.textContent = "Impossible de charger les sessions."; return carte; }
+      if (r.data.length === 0) zone.innerHTML = '<p class="meta">Aucune session prévue.</p>';
+      const eleves = await listeEleves(cours.id);
+      r.data.forEach((session) => zone.append(blocSession(session, eleves)));
+      return carte;
+    }
+
+    async function chargerCours() {
+      const r = await appel("/api/courses");
+      if (!r.ok) { message(MSG_SERVEUR); return; }
+      const mes = r.data.filter((c) => c.teacher_id === monId);
+
+      const optionsCours = mes
+        .map((c) => `<option value="${c.id}">${esc(c.subject)} : ${esc(c.title)}</option>`)
+        .join("");
+      $("prog-cours").innerHTML = optionsCours;
+      $("seance-cours").innerHTML = optionsCours;
+      if (mes.length > 0) await remplirEleves(mes[0].id);
+
+      $("cours").innerHTML = "";
+      if (mes.length === 0) {
+        $("cours").innerHTML = '<div class="empty">Aucun cours ne vous est attribué pour le moment.</div>';
+        return;
+      }
+      for (const cours of mes) {
+        $("cours").append(await carteCours(cours));
+      }
+    }
+
+    async function demarrer() {
+      if (!token) { window.location.href = "login.html"; return; }
+      const me = await appel("/api/auth/me");
+      if (!me.ok) return;
+      if (me.data.role !== "teacher") {
+        message("Cette page est réservée aux professeurs.");
+        return;
+      }
+      monId = me.data.id;
+      await chargerCours();
+    }
+
+    $("logout").addEventListener("click", deconnexion);
+
+    $("prog-cours").addEventListener("change", () => remplirEleves(Number($("prog-cours").value)));
+
+    $("form-seance").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const r = await appel(`/api/courses/${Number($("seance-cours").value)}/sessions`, {
+        method: "POST",
+        body: JSON.stringify({ date: $("seance-date").value, zoom_link: null }),
+      });
+      if (r.status === 401) return;
+      if (!r.ok) { message(libelle(r)); return; }
+      event.target.reset();
+      message("Séance créée.", true);
+      await chargerCours();
+    });
+
+    $("form-progression").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const r = await appel("/api/progress", {
+        method: "POST",
+        body: JSON.stringify({
+          student_id: Number($("prog-eleve").value),
+          course_id: Number($("prog-cours").value),
+          level: $("prog-niveau").value,
+          note: $("prog-note").value || null,
+        }),
+      });
+      if (r.status === 401) return;
+      if (!r.ok) { message(libelle(r)); return; }
+      event.target.reset();
+      message("Progression enregistrée.", true);
+    });
+
+    demarrer();
+  </script>
+</body>
+</html>
