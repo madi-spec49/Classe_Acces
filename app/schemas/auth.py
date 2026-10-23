@@ -1,12 +1,22 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
 from datetime import datetime
 
+from app.levels import Level
+
 
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
     first_name: str
     last_name: str
+
+
+class StudentCreate(UserRegister):
+    level: Level
+
+
+class PasswordReset(BaseModel):
+    password: str
 
 
 class UserLogin(BaseModel):

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import Course, EnrollmentRequest, ParentStudent, ProgressRecord, User
+from app.models import Course, ParentStudent, ProgressRecord, User
 from app.schemas.progress import ProgressCreate, ProgressResponse
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
@@ -21,17 +21,9 @@ def record_progress(
     if course.teacher_id != teacher.id:
         raise HTTPException(status_code=403, detail="Not your course")
 
-    enrollment = (
-        db.query(EnrollmentRequest)
-        .filter(
-            EnrollmentRequest.student_id == payload.student_id,
-            EnrollmentRequest.course_id == course.id,
-            EnrollmentRequest.status == "approved",
-        )
-        .first()
-    )
-    if enrollment is None:
-        raise HTTPException(status_code=400, detail="Student is not enrolled in this course")
+    student = db.get(User, payload.student_id)
+    if student is None or student.role != "student" or student.level != course.level:
+        raise HTTPException(status_code=400, detail="Student is not in this course level")
 
     record = ProgressRecord(
         student_id=payload.student_id,
@@ -57,6 +49,15 @@ def list_student_progress(
     elif user.role == "parent":
         link = db.get(ParentStudent, (user.id, student_id))
         allowed = link is not None
+    elif user.role == "teacher":
+        student = db.get(User, student_id)
+        allowed = (
+            student is not None
+            and student.level is not None
+            and db.query(Course)
+            .filter(Course.teacher_id == user.id, Course.level == student.level)
+            .first() is not None
+        )
     else:
         allowed = False
 

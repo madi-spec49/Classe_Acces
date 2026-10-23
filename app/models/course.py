@@ -18,6 +18,7 @@ class Course(Base):
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     zoom_link = Column(String(500))
+    level = Column(String(20), nullable=False, default="debutant")
 
 
 class CourseSession(Base):
