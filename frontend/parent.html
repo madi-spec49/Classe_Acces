@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Espace parent : suivi de mes enfants | Classe Accès</title>
+  <meta name="description" content="Espace parent de Classe Accès : consultez les présences et la progression de vos enfants." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
+</head>
+<body>
+  <header class="topnav">
+    <nav class="container topnav-inner" aria-label="Navigation principale">
+      <a class="brand" href="login.html">
+        <img src="logo.svg" alt="" width="32" height="32" />
+        <span class="logo">Classe Accès</span>
+      </a>
+      <button class="btn btn-secondary btn-small" type="button" id="logout">Se déconnecter</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="screen is-active">
+      <div class="screen-head">
+        <p class="eyebrow">Espace parent</p>
+        <h1 id="titre">Bonjour</h1>
+        <p class="lead">Choisissez un enfant pour voir ses présences et sa progression.</p>
+      </div>
+
+      <div id="flash"></div>
+
+      <div class="section-head">
+        <h2>Mes enfants</h2>
+        <span class="count" id="compte"></span>
+      </div>
+      <div class="bento" id="liste"></div>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container row-between">
+      <span>© 2026 Classe Accès · Association scolaire</span>
+      <span class="meta">Cours le vendredi soir, le samedi et le dimanche</span>
+    </div>
+  </footer>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+    const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
+    const token = localStorage.getItem("token");
+    const $ = (id) => document.getElementById(id);
+
+    const esc = (texte) => String(texte).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+
+    const LIBELLES_NIVEAU = { debutant: "Débutant", intermediaire: "Intermédiaire", avance: "Avancé" };
+
+    function message(texte) {
+      const flash = $("flash");
+      flash.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "banner";
+      div.style.color = "var(--danger)";
+      div.textContent = texte;
+      flash.append(div);
+    }
+
+    function deconnexion() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    async function appel(url) {
+      const reponse = await fetch(`${API_URL}${url}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (reponse.status === 401) {
+        deconnexion();
+        return { ok: false, status: 401, data: null };
+      }
+      let data = null;
+      try { data = await reponse.json(); } catch (erreur) {}
+      return { ok: reponse.ok, status: reponse.status, data };
+    }
+
+    function carte(enfant) {
+      const article = document.createElement("article");
+      article.className = "card";
+      article.innerHTML = `
+        <div class="course-top">
+          <div>
+            <span class="tag">Élève</span>
+            <h3 style="margin-top: 10px;">${esc(enfant.first_name)} ${esc(enfant.last_name)}</h3>
+          </div>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-item"><span class="k">Niveau</span><span class="v">${LIBELLES_NIVEAU[enfant.level] || "Non défini"}</span></div>
+        </div>
+        <div class="card-actions" style="margin-top: 18px;">
+          <a class="btn btn-primary" href="suivi.html?id=${enfant.id}">Voir le suivi</a>
+        </div>
+      `;
+      return article;
+    }
+
+    async function charger() {
+      if (!token) { window.location.href = "login.html"; return; }
+      const me = await appel("/api/auth/me");
+      if (me.status === 401) return;
+      if (!me.ok) { message(MSG_SERVEUR); return; }
+      if (me.data.role !== "parent") {
+        $("liste").innerHTML = '<div class="empty">Cette page est réservée aux parents.</div>';
+        return;
+      }
+      $("titre").textContent = `Bonjour, ${me.data.first_name}`;
+
+      const r = await appel("/api/parents/me/children");
+      if (r.status === 401) return;
+      if (!r.ok) { message("Impossible de charger vos enfants."); return; }
+
+      $("compte").textContent = `${r.data.length} enfant(s)`;
+      if (r.data.length === 0) {
+        $("liste").innerHTML = '<div class="empty">Aucun enfant n’est rattaché à votre compte pour le moment.</div>';
+        return;
+      }
+      r.data.forEach((enfant) => $("liste").append(carte(enfant)));
+    }
+
+    $("logout").addEventListener("click", deconnexion);
+    charger();
+  </script>
+</body>
+</html>
