@@ -1,14 +1,4 @@
-def register_student(client, email):
-    response = client.post(
-        "/api/auth/register",
-        json={
-            "email": email,
-            "password": "monMotDePasse123",
-            "first_name": "Lina",
-            "last_name": "Durand",
-        },
-    )
-    return response.json()["access_token"]
+from helpers import auth
 
 
 def teacher_payload(email):
@@ -20,16 +10,29 @@ def teacher_payload(email):
     }
 
 
-def test_student_cannot_create_teacher(client):
-    token = register_student(client, "eleve@example.com")
+def test_student_cannot_create_teacher(client, make_user):
+    token, _ = make_user("eleve.staff@example.com", role="student")
 
     response = client.post(
         "/api/staff/teachers",
         json=teacher_payload("prof@example.com"),
-        headers={"Authorization": f"Bearer {token}"},
+        headers=auth(token),
     )
 
     assert response.status_code == 403
+
+
+def test_staff_can_create_teacher(client, make_user):
+    token, _ = make_user("staff.create@example.com", role="staff")
+
+    response = client.post(
+        "/api/staff/teachers",
+        json=teacher_payload("prof.nouveau@example.com"),
+        headers=auth(token),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "teacher"
 
 
 def test_create_teacher_without_token_returns_403(client):
