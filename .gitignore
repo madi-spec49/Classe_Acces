@@ -29,3 +29,6 @@ env/
 
 # Docker
 docker-compose.override.yml
+# Synchronisation Postman locale (chemins propres à chaque machine)
+.postman/
+postman/
