@@ -1,95 +1,159 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cours</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
-    .course { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin-top: 12px; }
-    button { padding: 6px 12px; cursor: pointer; margin-top: 8px; }
-    #message { margin-top: 12px; color: #b00020; }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cours en ligne le week-end : espace élèves Classe Accès</title>
+  <meta name="description" content="Retrouvez tous vos cours en ligne du week-end, leurs dates et votre progression sur Classe Accès, la plateforme de l'association scolaire, à tout moment." />
+  <meta property="og:title" content="Cours en ligne le week-end : espace élèves Classe Accès" />
+  <meta property="og:description" content="Retrouvez tous vos cours en ligne du week-end, leurs dates et votre progression sur Classe Accès, la plateforme de l'association scolaire, à tout moment." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Classe Accès" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
 </head>
 <body>
-  <h1>Cours disponibles</h1>
-  <button id="logout">Se déconnecter</button>
-  <div id="courses"></div>
-  <p id="message"></p>
+  <header class="topnav">
+    <nav class="container topnav-inner" aria-label="Navigation principale">
+      <a class="brand" href="login.html">
+        <img src="logo.svg" alt="" width="32" height="32" />
+        <span class="logo">Classe Accès</span>
+      </a>
+      <button class="btn btn-secondary btn-small" type="button" id="logout">Se déconnecter</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="screen is-active">
+      <div class="screen-head">
+        <p class="eyebrow">Espace élève</p>
+        <h1 id="titre">Bonjour</h1>
+        <p class="lead">Voici les cours du week-end correspondant à votre niveau.</p>
+      </div>
+
+      <div id="flash"></div>
+
+      <p style="margin-bottom: 24px;"><a class="btn btn-secondary btn-small" href="suivi.html">Voir mon suivi</a></p>
+
+      <div class="section-head">
+        <h2>Cours du week-end</h2>
+        <span class="count" id="compte"></span>
+      </div>
+      <div class="bento" id="liste"></div>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container row-between">
+      <span>© 2026 Classe Accès · Association scolaire</span>
+      <span class="meta">Cours le vendredi soir, le samedi et le dimanche</span>
+    </div>
+  </footer>
 
   <script>
     const API_URL = "http://127.0.0.1:8000";
+    const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    const message = document.getElementById("message");
-    const jours = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+    const $ = (id) => document.getElementById(id);
 
-    if (!token) {
-      window.location.href = "login.html";
+    let coursCharges = [];
+    const LIBELLES_NIVEAU = { debutant: "Débutant", intermediaire: "Intermédiaire", avance: "Avancé" };
+
+    const esc = (texte) => String(texte).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+
+    function message(texte, ok = false) {
+      const flash = $("flash");
+      flash.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "banner" + (ok ? " banner-ok" : "");
+      if (!ok) div.style.color = "var(--danger)";
+      div.textContent = texte;
+      flash.append(div);
+      flash.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    async function loadCourses() {
-      const response = await fetch(`${API_URL}/api/courses`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = "login.html";
-        return;
-      }
-
-      const courses = await response.json();
-      const container = document.getElementById("courses");
-      container.innerHTML = "";
-
-      courses.forEach((course) => {
-        const div = document.createElement("div");
-        div.className = "course";
-
-        const title = document.createElement("strong");
-        title.textContent = course.title;
-
-        const info = document.createElement("p");
-        info.textContent = `${course.subject} - ${jours[course.day_of_week]}, de ${course.start_time.slice(0, 5)} à ${course.end_time.slice(0, 5)}`;
-
-        div.append(title, info);
-
-        if (role === "student") {
-          const button = document.createElement("button");
-          button.textContent = "Demander l'inscription";
-          button.addEventListener("click", () => requestEnrollment(course.id));
-          div.append(button);
-        }
-
-        container.append(div);
-      });
-    }
-
-    async function requestEnrollment(courseId) {
-      const response = await fetch(`${API_URL}/api/registrations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ course_id: courseId }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        message.textContent = "Demande envoyée. Le staff doit la valider.";
-      } else {
-        message.textContent = data.detail || "Erreur, réessaie.";
-      }
-    }
-
-    document.getElementById("logout").addEventListener("click", () => {
+    function deconnexion() {
       localStorage.clear();
       window.location.href = "login.html";
-    });
+    }
 
-    loadCourses();
+    async function appel(url, options = {}) {
+      const reponse = await fetch(`${API_URL}${url}`, {
+        method: options.method || "GET",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: options.body,
+      });
+      if (reponse.status === 401) {
+        deconnexion();
+        return { ok: false, status: 401, data: null };
+      }
+      let data = null;
+      try { data = await reponse.json(); } catch (erreur) {}
+      return { ok: reponse.ok, status: reponse.status, data };
+    }
+
+    function carte(c) {
+      const article = document.createElement("article");
+      article.className = "card";
+      article.innerHTML = `
+        <div class="course-top">
+          <div>
+            <span class="tag">${esc(c.subject)}</span>
+            <h3 style="margin-top: 10px;">${esc(c.title)}</h3>
+          </div>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-item"><span class="k">Jour</span><span class="v">${JOURS[c.day_of_week]}</span></div>
+          <div class="meta-item"><span class="k">Horaire</span><span class="v">${c.start_time.slice(0, 5)} – ${c.end_time.slice(0, 5)}</span></div>
+          <div class="meta-item"><span class="k">Niveau</span><span class="v">${LIBELLES_NIVEAU[c.level] || esc(c.level)}</span></div>
+        </div>
+        ${c.zoom_link ? `<div class="card-actions" style="margin-top: 18px;"><a class="btn btn-zoom" href="${esc(c.zoom_link)}" target="_blank" rel="noopener">Rejoindre sur Zoom</a></div>` : ""}
+      `;
+      return article;
+    }
+
+    function afficher() {
+      const liste = $("liste");
+      $("compte").textContent = `${coursCharges.length} cours`;
+      liste.innerHTML = "";
+      if (!coursCharges.length) {
+        liste.innerHTML = '<div class="empty">Aucun cours disponible pour le moment.</div>';
+        return;
+      }
+      coursCharges.forEach((c) => liste.append(carte(c)));
+    }
+
+    async function charger() {
+      try {
+        const me = await appel("/api/auth/me");
+        if (me.status === 401) return;
+        $("titre").textContent = `Bonjour, ${me.data.first_name}`;
+
+        if (me.data.role !== "student") {
+          $("liste").innerHTML = '<div class="empty">Cette page est réservée aux élèves.</div>';
+          return;
+        }
+
+        const r = await appel("/api/courses");
+        if (r.status === 401) return;
+        coursCharges = r.data;
+        afficher();
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
+    }
+
+    $("logout").addEventListener("click", deconnexion);
+
+    if (token) {
+      charger();
+    } else {
+      window.location.href = "login.html";
+    }
   </script>
 </body>
 </html>
