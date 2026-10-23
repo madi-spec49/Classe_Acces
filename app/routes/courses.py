@@ -43,6 +43,13 @@ def list_courses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role == "student":
+        return (
+            db.query(Course)
+            .filter(Course.level == current_user.level)
+            .order_by(Course.id)
+            .all()
+        )
     return db.query(Course).order_by(Course.id).all()
 
 
@@ -51,9 +58,11 @@ def create_session(
     course_id: int,
     data: SessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("staff")),
+    current_user: User = Depends(get_current_user),
 ):
-    get_course_or_404(course_id, db)
+    course = get_course_or_404(course_id, db)
+    if current_user.role != "staff" and course.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     course_session = CourseSession(course_id=course_id, **data.model_dump())
     db.add(course_session)
@@ -76,3 +85,26 @@ def list_sessions(
         .order_by(CourseSession.date)
         .all()
     )
+
+
+
+@router.get("/{course_id}/students")
+def list_course_students(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    course = get_course_or_404(course_id, db)
+    if current_user.role != "staff" and course.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    students = (
+        db.query(User)
+        .filter(User.role == "student", User.level == course.level)
+        .order_by(User.last_name, User.first_name)
+        .all()
+    )
+    return [
+        {"id": s.id, "first_name": s.first_name, "last_name": s.last_name}
+        for s in students
+    ]

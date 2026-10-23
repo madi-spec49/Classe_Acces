@@ -2,6 +2,8 @@ from datetime import datetime, time
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.levels import Level
+
 
 class CourseCreate(BaseModel):
     teacher_id: int
@@ -11,6 +13,7 @@ class CourseCreate(BaseModel):
     start_time: time
     end_time: time
     zoom_link: str | None = Field(default=None, max_length=500)
+    level: Level
 
     @model_validator(mode="after")
     def check_times(self):
@@ -28,6 +31,7 @@ class CourseResponse(BaseModel):
     start_time: time
     end_time: time
     zoom_link: str | None
+    level: str
 
     model_config = ConfigDict(from_attributes=True)
 

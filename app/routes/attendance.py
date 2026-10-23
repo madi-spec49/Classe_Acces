@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import AttendanceRecord, Course, CourseSession, EnrollmentRequest, User
+from app.models import AttendanceRecord, Course, CourseSession, User
 from app.schemas.attendance import AttendanceCreate, AttendanceResponse
 
 router = APIRouter(prefix="/api/sessions", tags=["attendance"])
@@ -29,17 +29,9 @@ def record_attendance(
     if course.teacher_id != teacher.id:
         raise HTTPException(status_code=403, detail="Not your course")
 
-    enrollment = (
-        db.query(EnrollmentRequest)
-        .filter(
-            EnrollmentRequest.student_id == payload.student_id,
-            EnrollmentRequest.course_id == course.id,
-            EnrollmentRequest.status == "approved",
-        )
-        .first()
-    )
-    if enrollment is None:
-        raise HTTPException(status_code=400, detail="Student is not enrolled in this course")
+    student = db.get(User, payload.student_id)
+    if student is None or student.role != "student" or student.level != course.level:
+        raise HTTPException(status_code=400, detail="Student is not in this course level")
 
     record = (
         db.query(AttendanceRecord)
