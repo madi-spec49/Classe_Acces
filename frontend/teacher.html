@@ -35,15 +35,6 @@
 
       <div id="cours" class="bento"></div>
 
-      <div class="section-head" style="margin-top: 44px;"><h2>Nouvelle séance</h2></div>
-      <form class="card stack" id="form-seance">
-        <div class="form-grid">
-          <div class="field"><label for="seance-cours">Cours</label><select class="input" id="seance-cours" required></select></div>
-          <div class="field"><label for="seance-date">Date et heure</label><input class="input" id="seance-date" type="datetime-local" required /></div>
-        </div>
-        <div><button class="btn btn-primary" type="submit">Créer la séance</button></div>
-      </form>
-
       <div class="section-head" style="margin-top: 44px;"><h2>Saisir la progression</h2></div>
       <form class="card stack" id="form-progression">
         <div class="form-grid">
@@ -220,7 +211,6 @@
         .map((c) => `<option value="${c.id}">${esc(c.subject)} : ${esc(c.title)}</option>`)
         .join("");
       $("prog-cours").innerHTML = optionsCours;
-      $("seance-cours").innerHTML = optionsCours;
       if (mes.length > 0) await remplirEleves(mes[0].id);
 
       $("cours").innerHTML = "";
@@ -248,19 +238,6 @@
     $("logout").addEventListener("click", deconnexion);
 
     $("prog-cours").addEventListener("change", () => remplirEleves(Number($("prog-cours").value)));
-
-    $("form-seance").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const r = await appel(`/api/courses/${Number($("seance-cours").value)}/sessions`, {
-        method: "POST",
-        body: JSON.stringify({ date: $("seance-date").value, zoom_link: null }),
-      });
-      if (r.status === 401) return;
-      if (!r.ok) { message(libelle(r)); return; }
-      event.target.reset();
-      message("Séance créée.", true);
-      await chargerCours();
-    });
 
     $("form-progression").addEventListener("submit", async (event) => {
       event.preventDefault();
