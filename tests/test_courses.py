@@ -153,15 +153,15 @@ def test_student_can_list_sessions(client, staff_token, student_token, teacher_i
     assert len(response.json()) == 1
 
 
-def test_teacher_can_delete_own_course(client, make_user, staff_token):
+def test_teacher_cannot_delete_own_course(client, make_user, staff_token):
     teacher_token, teacher_id = make_user("prof.suppr@example.com", role="teacher")
     course_id = create_course(client, staff_token, teacher_id)
 
     response = client.delete(f"/api/courses/{course_id}", headers=auth(teacher_token))
 
-    assert response.status_code == 200
+    assert response.status_code == 403
     remaining = client.get("/api/courses", headers=auth(staff_token)).json()
-    assert course_id not in [c["id"] for c in remaining]
+    assert course_id in [c["id"] for c in remaining]
 
 
 def test_other_teacher_cannot_delete_course(client, make_user, staff_token, teacher_id):

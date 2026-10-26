@@ -231,20 +231,6 @@
         }
       }
 
-      const suppr = document.createElement("button");
-      suppr.className = "btn btn-secondary btn-small";
-      suppr.type = "button";
-      suppr.style.marginTop = "12px";
-      suppr.textContent = "Supprimer le cours";
-      suppr.addEventListener("click", async () => {
-        if (!confirm(`Supprimer « ${cours.subject} : ${cours.title} » ? Ses séances, présences et progressions seront supprimées définitivement.`)) return;
-        const d = await appel(`/api/courses/${cours.id}`, { method: "DELETE" });
-        if (d.status === 401) return;
-        if (!d.ok) { message(libelle(d)); return; }
-        message("Cours supprimé.", true);
-        await chargerCours();
-      });
-      carte.append(suppr);
       return carte;
     }
 

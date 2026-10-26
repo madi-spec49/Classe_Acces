@@ -121,6 +121,15 @@
         <h3>Cours existants</h3>
         <div id="liste-cours"></div>
       </section>
+      <section class="card stack" style="margin-top: 24px;">
+        <h3>Supprimer un compte</h3>
+        <p class="meta">Élève, parent ou professeur. Ses présences, sa progression et ses liens sont supprimés. Un professeur doit n'avoir aucun cours.</p>
+        <div class="field"><label for="sup-recherche">Rechercher un compte</label><input class="input" id="sup-recherche" type="search" placeholder="Tape un nom…" /></div>
+        <div id="sup-resultats"></div>
+        <p class="meta" id="sup-choix">Aucun compte choisi</p>
+        <input type="hidden" id="sup-compte" />
+        <div><button class="btn btn-secondary" type="button" id="sup-bouton">Supprimer ce compte</button></div>
+      </section>
       <form class="card stack" id="form-mdp" style="margin-top: 24px;">
         <h3>Réinitialiser un mot de passe</h3>
         <div class="field"><label for="mdp-recherche">Rechercher un compte</label><input class="input" id="mdp-recherche" type="search" placeholder="Tape un nom…" /></div>
@@ -148,6 +157,7 @@
     const $ = (id) => document.getElementById(id);
 
     const ERREURS = {
+      "Teacher still has courses": "Ce professeur a encore des cours. Supprime-les d'abord.",
       "Email already registered": "Cet email est déjà utilisé.",
       "Student not found": "Élève introuvable. Vérifie l’identifiant.",
       "Parent not found": "Parent introuvable.",
@@ -385,6 +395,48 @@
     }
 
     $("mdp-recherche").addEventListener("input", afficherComptes);
+
+    function afficherComptesASupprimer() {
+      const recherche = $("sup-recherche").value.trim().toLowerCase();
+      const zone = $("sup-resultats");
+      if (recherche === "") { zone.innerHTML = ""; return; }
+      const filtres = tousLesComptes
+        .filter((c) => `${c.first_name} ${c.last_name}`.toLowerCase().includes(recherche))
+        .slice(0, 8);
+      zone.innerHTML = filtres.length === 0
+        ? '<p class="meta">Aucun compte trouvé.</p>'
+        : filtres
+            .map((c) => `<button class="btn btn-secondary btn-small" type="button" data-id="${c.id}" data-nom="${esc(c.first_name)} ${esc(c.last_name)}" style="margin: 4px 6px 0 0;">${esc(c.first_name)} ${esc(c.last_name)} (${LIBELLES_ROLE[c.role] || esc(c.role)})</button>`)
+            .join("");
+      zone.querySelectorAll("button").forEach((bouton) =>
+        bouton.addEventListener("click", () => {
+          $("sup-compte").value = bouton.dataset.id;
+          $("sup-choix").textContent = "Compte choisi : " + bouton.textContent;
+        })
+      );
+    }
+
+    $("sup-recherche").addEventListener("input", afficherComptesASupprimer);
+
+    $("sup-bouton").addEventListener("click", async () => {
+      if (!$("sup-compte").value) { message("Choisis un compte dans les résultats de la recherche."); return; }
+      if (!confirm(`Supprimer définitivement le compte « ${$("sup-choix").textContent.replace("Compte choisi : ", "")} » ? Ses présences, sa progression et ses liens seront supprimés.`)) return;
+      try {
+        const r = await appel(`/api/staff/users/${$("sup-compte").value}`, { method: "DELETE" });
+        if (r.status === 401) return;
+        if (!r.ok) { message(libelle(r)); return; }
+        $("sup-compte").value = "";
+        $("sup-recherche").value = "";
+        $("sup-resultats").innerHTML = "";
+        $("sup-choix").textContent = "Aucun compte choisi";
+        message("Compte supprimé.", true);
+        await chargerComptes();
+        await chargerEleves();
+        await chargerProfesseurs();
+      } catch (erreur) {
+        message(MSG_SERVEUR);
+      }
+    });
 
     $("form-mdp").addEventListener("submit", async (event) => {
       event.preventDefault();

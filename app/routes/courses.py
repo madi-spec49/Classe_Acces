@@ -113,14 +113,10 @@ def list_course_students(
 def delete_course(
     course_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    staff: User = Depends(require_role("staff")),
 ):
-    # Le staff peut supprimer n'importe quel cours, le professeur seulement les siens.
+    # Réservé au staff. Les séances, présences et progressions liées sont supprimées en cascade.
     course = get_course_or_404(course_id, db)
-    if current_user.role != "staff" and course.teacher_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
-
-    # Les séances, présences et progressions liées sont supprimées en cascade.
     db.delete(course)
     db.commit()
     return {"deleted": course_id}
