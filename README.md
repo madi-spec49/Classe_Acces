@@ -62,7 +62,7 @@ L'application suit une architecture en trois couches : un client léger dans le 
 ```mermaid
 flowchart LR
     subgraph Client["Navigateur"]
-        FE["Pages HTML + JavaScript natif<br/>login · staff · courses · teacher · suivi · parent"]
+        FE["Pages HTML + JavaScript natif<br/>login · staff · courses (élève) · teacher · suivi (élève, parent) · parent"]
     end
 
     subgraph Backend["Back-end FastAPI (Python 3.12)"]
