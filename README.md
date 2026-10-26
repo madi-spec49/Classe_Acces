@@ -25,7 +25,7 @@ Projet réalisé dans le cadre du **Portfolio Stage 4** (Holberton School), dév
 
 - **Comptes** : tous les comptes (élève, parent, professeur, staff) sont créés par le staff. Il n'y a pas d'inscription publique.
 - **Niveaux** : chaque cours et chaque élève a un niveau (`debutant`, `intermediaire` ou `avance`). Un élève ne voit que les cours de son niveau.
-- **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées.
+- **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées et peut supprimer le cours. La suppression efface aussi ses séances, présences et progressions.
 - **Assiduité** : le professeur d'un cours enregistre le statut de chaque élève de son niveau : présent, absent ou en retard (`present`, `absent`, `late`).
 - **Progression** : le professeur enregistre le niveau atteint et une note pour un élève de son niveau.
 - **Suivi familial** : un parent lié à un élève consulte ses présences et sa progression. Il ne voit que ses propres enfants.
@@ -43,6 +43,7 @@ Le contrôle d'accès repose sur le rôle de l'utilisateur (RBAC) : la dépendan
 | Créer un compte élève, parent ou professeur | ❌ | ❌ | ❌ | ✅ |
 | Lier un parent à un élève | ❌ | ❌ | ❌ | ✅ |
 | Créer un cours | ❌ | ❌ | ❌ | ✅ |
+| Supprimer un cours (et son historique) | ❌ | ❌ | ✅ (ses cours) | ✅ |
 | Créer une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
 | Voir les cours de son niveau | ✅ | ❌ | ❌ | ✅ (tous) |
 | Saisir l'assiduité | ❌ | ❌ | ✅ (ses cours, niveau de l'élève) | ❌ |
@@ -300,6 +301,7 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/courses` | Staff | Crée un cours |
 | GET | `/api/courses` | Connecté | Liste les cours (élève : son niveau uniquement) |
 | GET | `/api/courses/{course_id}/students` | Staff ou professeur du cours | Liste les élèves du niveau du cours |
+| DELETE | `/api/courses/{course_id}` | Staff ou professeur du cours | Supprime le cours, ses séances, présences et progressions |
 | POST | `/api/courses/{course_id}/sessions` | Staff ou professeur du cours | Crée une séance |
 | GET | `/api/courses/{course_id}/sessions` | Connecté | Liste les séances d'un cours |
 | POST | `/api/sessions/{session_id}/attendance` | Professeur du cours | Enregistre ou met à jour une présence |
