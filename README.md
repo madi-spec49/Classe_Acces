@@ -26,7 +26,7 @@ Projet réalisé dans le cadre du **Portfolio Stage 4** (Holberton School), dév
 - **Comptes** : tous les comptes (élève, parent, professeur, staff) sont créés par le staff. Il n'y a pas d'inscription publique.
 - **Niveaux** : chaque cours et chaque élève a un niveau (`debutant`, `intermediaire` ou `avance`). Un élève ne voit que les cours de son niveau.
 - **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées.
-- **Assiduité** : le professeur d'un cours enregistre le statut de chaque élève de son niveau : présent, absent, en retard ou absence justifiée (`present`, `absent`, `late`, `excused`).
+- **Assiduité** : le professeur d'un cours enregistre le statut de chaque élève de son niveau : présent, absent ou en retard (`present`, `absent`, `late`).
 - **Progression** : le professeur enregistre le niveau atteint et une note pour un élève de son niveau.
 - **Suivi familial** : un parent lié à un élève consulte ses présences et sa progression. Il ne voit que ses propres enfants.
 - **Authentification** : connexion par email et mot de passe, jeton JWT valable 60 minutes.

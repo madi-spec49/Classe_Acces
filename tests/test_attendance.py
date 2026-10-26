@@ -69,17 +69,6 @@ def test_teacher_updates_existing_record(client, data):
     assert second["status"] == "late"
 
 
-def test_teacher_records_excused_absence(client, data):
-    response = client.post(
-        attendance_url(data["session_id"]),
-        headers=auth(data["teacher_token"]),
-        json={"student_id": data["student_id"], "status": "excused", "note": "Certificat médical"},
-    )
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "excused"
-
-
 def test_unknown_status_returns_422(client, data):
     response = client.post(
         attendance_url(data["session_id"]),

@@ -6,7 +6,7 @@ from app.models.base import Base
 class AttendanceRecord(Base):
     __tablename__ = "attendance_records"
     __table_args__ = (
-        CheckConstraint("status IN ('present', 'absent', 'late', 'excused')", name="ck_attendance_status"),
+        CheckConstraint("status IN ('present', 'absent', 'late')", name="ck_attendance_status"),
         UniqueConstraint("session_id", "student_id", name="uq_attendance_session_student"),
     )
 
