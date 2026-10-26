@@ -89,6 +89,36 @@ def test_unlinked_parent_cannot_read_progress(client, data):
     assert response.status_code == 403
 
 
+def test_parent_cannot_list_courses(client, data):
+    response = client.get("/api/courses", headers=auth(data["parent_token"]))
+
+    assert response.status_code == 403
+
+
+def test_parent_cannot_list_sessions(client, make_user, data):
+    _, teacher_id = make_user("prof.par@example.com", role="teacher")
+    course = client.post(
+        "/api/courses",
+        headers=auth(data["staff_token"]),
+        json={
+            "teacher_id": teacher_id,
+            "title": "Maths",
+            "subject": "Maths",
+            "day_of_week": 6,
+            "start_time": "10:00:00",
+            "end_time": "11:00:00",
+            "level": "debutant",
+        },
+    ).json()
+
+    response = client.get(
+        f"/api/courses/{course['id']}/sessions",
+        headers=auth(data["parent_token"]),
+    )
+
+    assert response.status_code == 403
+
+
 def test_link_unknown_student_returns_404(client, data):
     response = client.post(
         f"/api/parents/{data['parent_id']}/students/9999",

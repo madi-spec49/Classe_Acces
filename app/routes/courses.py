@@ -43,6 +43,8 @@ def list_courses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role == "parent":
+        raise HTTPException(status_code=403, detail="Access denied")
     if current_user.role == "student":
         return (
             db.query(Course)
@@ -85,6 +87,8 @@ def list_sessions(
     current_user: User = Depends(get_current_user),
 ):
     course = get_course_or_404(course_id, db)
+    if current_user.role == "parent":
+        raise HTTPException(status_code=403, detail="Access denied")
     if current_user.role == "student" and course.level != current_user.level:
         raise HTTPException(status_code=403, detail="Access denied")
     if current_user.role == "teacher" and course.teacher_id != current_user.id:

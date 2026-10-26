@@ -47,8 +47,8 @@ Le contrôle d'accès repose sur le rôle de l'utilisateur (RBAC) : la dépendan
 | Supprimer un cours (et son historique) | ❌ | ❌ | ❌ | ✅ |
 | Supprimer un compte élève, parent ou professeur | ❌ | ❌ | ❌ | ✅ |
 | Créer une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
-| Voir les séances d'un cours | ✅ (son niveau) | ✅ | ✅ (ses cours) | ✅ |
-| Voir la liste des cours | Son niveau | Tous (pour le suivi) | Ses cours | Tous |
+| Voir les séances d'un cours | ✅ (son niveau) | ❌ | ✅ (ses cours) | ✅ |
+| Voir la liste des cours | Son niveau | ❌ | Ses cours | Tous |
 | Saisir l'assiduité | ❌ | ❌ | ✅ (ses cours, niveau de l'élève) | ❌ |
 | Voir l'assiduité d'une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
 | Saisir la progression | ❌ | ❌ | ✅ (élèves de son niveau) | ❌ |
@@ -302,12 +302,12 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/parents/{parent_id}/students/{student_id}` | Staff | Relie un parent à un élève |
 | GET | `/api/parents/me/children` | Parent | Liste les enfants liés au parent |
 | POST | `/api/courses` | Staff | Crée un cours |
-| GET | `/api/courses` | Connecté | Liste les cours : élève son niveau, professeur ses cours, staff tous |
+| GET | `/api/courses` | Élève, professeur ou staff | Liste les cours : élève son niveau, professeur ses cours, staff tous (refusé au parent) |
 | GET | `/api/courses/{course_id}/students` | Staff ou professeur du cours | Liste les élèves du niveau du cours |
 | DELETE | `/api/courses/{course_id}` | Staff | Supprime le cours, ses séances, présences et progressions |
 | DELETE | `/api/staff/users/{user_id}` | Staff | Supprime un élève, un parent ou un professeur sans cours |
 | POST | `/api/courses/{course_id}/sessions` | Staff ou professeur du cours | Crée une séance |
-| GET | `/api/courses/{course_id}/sessions` | Élève du niveau du cours, professeur du cours, parent ou staff | Liste les séances d'un cours |
+| GET | `/api/courses/{course_id}/sessions` | Élève du niveau du cours, professeur du cours ou staff | Liste les séances d'un cours |
 | POST | `/api/sessions/{session_id}/attendance` | Professeur du cours | Enregistre ou met à jour une présence |
 | GET | `/api/sessions/{session_id}/attendance` | Staff ou professeur du cours | Liste les présences d'une séance |
 | POST | `/api/progress` | Professeur | Enregistre une progression |
@@ -337,7 +337,7 @@ python -m pytest -v
 
 Chaque test part d'une base vide : `conftest.py` crée les tables avant le test et les supprime après. Les comptes de test sont créés par la fixture `make_user`, qui les insère directement en base et génère un token valide. Les tests ne passent donc pas par la route de connexion pour créer leurs données, ce qui évite qu'une panne de la connexion fasse échouer tous les autres tests.
 
-**Ce qui est testé** (51 tests) :
+**Ce qui est testé** (53 tests) :
 
 - **Authentification** : connexion réussie, mauvais mot de passe, compte désactivé refusé, `/me` avec et sans token, token invalide.
 - **Rôles** : un élève ne peut pas créer de cours ni de séance, et un compte qui n'est pas professeur ne peut pas être lié à un cours.
@@ -345,7 +345,7 @@ Chaque test part d'une base vide : `conftest.py` crée les tables avant le test 
 - **Suppression de comptes** : le staff supprime élèves et parents, ne supprime pas un compte staff, ne supprime pas un professeur qui a des cours, et un élève ne peut pas supprimer quelqu'un.
 - **Assiduité** : seul le professeur du cours peut saisir les présences, un élève hors niveau est refusé, une seconde saisie met à jour la première.
 - **Progression** : même règle de niveau, lecture limitée à l'élève, à son parent lié et au staff.
-- **Parents** : création par le staff, lien parent-élève, un parent non lié ne voit pas la progression.
+- **Parents** : création par le staff, lien parent-élève, un parent non lié ne voit pas la progression, un parent n'a accès ni aux cours ni aux séances.
 
 ## Documentation
 

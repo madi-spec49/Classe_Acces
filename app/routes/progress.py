@@ -64,9 +64,24 @@ def list_student_progress(
     if not allowed:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return (
-        db.query(ProgressRecord)
+    rows = (
+        db.query(ProgressRecord, Course)
+        .join(Course, ProgressRecord.course_id == Course.id)
         .filter(ProgressRecord.student_id == student_id)
         .order_by(ProgressRecord.date)
         .all()
     )
+    return [
+        {
+            "id": record.id,
+            "student_id": record.student_id,
+            "course_id": record.course_id,
+            "teacher_id": record.teacher_id,
+            "level": record.level,
+            "note": record.note,
+            "date": record.date,
+            "course_subject": course.subject,
+            "course_title": course.title,
+        }
+        for record, course in rows
+    ]

@@ -21,3 +21,5 @@ class ProgressResponse(BaseModel):
     level: str
     note: Optional[str] = None
     date: datetime
+    course_subject: Optional[str] = None
+    course_title: Optional[str] = None
