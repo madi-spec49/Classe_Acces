@@ -178,7 +178,7 @@ Le schéma SQL de référence est dans [`db/schema.sql`](db/schema.sql).
 ## Structure du projet
 
 ```
-school-assoc/
+ClassAccees/
 ├── app/
 │   ├── main.py             # Création de l'application, CORS, enregistrement des routeurs
 │   ├── config.py           # Connexion à la base (engine, session, get_db)
@@ -224,8 +224,8 @@ Prérequis : Python 3.12 et Docker Desktop.
 1. Cloner le projet et entrer dans le dossier :
 
 ```bash
-git clone https://github.com/madi-spec49/school-assoc.git
-cd school-assoc
+git clone https://github.com/madi-spec49/ClassAccees.git
+cd ClassAccees
 ```
 
 2. Créer et activer l'environnement virtuel :
