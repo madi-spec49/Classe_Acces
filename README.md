@@ -47,7 +47,7 @@ Le contrôle d'accès repose sur le rôle de l'utilisateur (RBAC) : la dépendan
 | Supprimer un cours (et son historique) | ❌ | ❌ | ❌ | ✅ |
 | Supprimer un compte élève, parent ou professeur | ❌ | ❌ | ❌ | ✅ |
 | Créer une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
-| Voir les cours de son niveau | ✅ | ❌ | ❌ | ✅ (tous) |
+| Voir la liste des cours | Son niveau | Tous (pour le suivi) | Ses cours | Tous |
 | Saisir l'assiduité | ❌ | ❌ | ✅ (ses cours, niveau de l'élève) | ❌ |
 | Voir l'assiduité d'une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
 | Saisir la progression | ❌ | ❌ | ✅ (élèves de son niveau) | ❌ |
@@ -301,7 +301,7 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/parents/{parent_id}/students/{student_id}` | Staff | Relie un parent à un élève |
 | GET | `/api/parents/me/children` | Parent | Liste les enfants liés au parent |
 | POST | `/api/courses` | Staff | Crée un cours |
-| GET | `/api/courses` | Connecté | Liste les cours (élève : son niveau uniquement) |
+| GET | `/api/courses` | Connecté | Liste les cours : élève son niveau, professeur ses cours, staff tous |
 | GET | `/api/courses/{course_id}/students` | Staff ou professeur du cours | Liste les élèves du niveau du cours |
 | DELETE | `/api/courses/{course_id}` | Staff | Supprime le cours, ses séances, présences et progressions |
 | DELETE | `/api/staff/users/{user_id}` | Staff | Supprime un élève, un parent ou un professeur sans cours |
@@ -336,7 +336,7 @@ python -m pytest -v
 
 Chaque test part d'une base vide : `conftest.py` crée les tables avant le test et les supprime après. Les comptes de test sont créés par la fixture `make_user`, qui les insère directement en base et génère un token valide. Les tests ne passent donc pas par la route de connexion pour créer leurs données, ce qui évite qu'une panne de la connexion fasse échouer tous les autres tests.
 
-**Ce qui est testé** (47 tests) :
+**Ce qui est testé** (48 tests) :
 
 - **Authentification** : connexion réussie, mauvais mot de passe, `/me` avec et sans token, token invalide.
 - **Rôles** : un élève ne peut pas créer de cours ni de séance, et un compte qui n'est pas professeur ne peut pas être lié à un cours.

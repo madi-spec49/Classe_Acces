@@ -193,3 +193,17 @@ def test_delete_unknown_course_returns_404(client, staff_token):
     response = client.delete("/api/courses/999", headers=auth(staff_token))
 
     assert response.status_code == 404
+
+
+def test_teacher_sees_only_own_courses(client, make_user, staff_token):
+    teacher_token, teacher_id = make_user("prof.liste@example.com", role="teacher")
+    _, other_teacher_id = make_user("prof.autre.liste@example.com", role="teacher")
+    own_id = create_course(client, staff_token, teacher_id)
+    other_id = create_course(client, staff_token, other_teacher_id)
+
+    response = client.get("/api/courses", headers=auth(teacher_token))
+
+    ids = [c["id"] for c in response.json()]
+    assert own_id in ids
+    assert other_id not in ids
+
