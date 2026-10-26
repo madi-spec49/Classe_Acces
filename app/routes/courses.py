@@ -50,6 +50,13 @@ def list_courses(
             .order_by(Course.id)
             .all()
         )
+    if current_user.role == "teacher":
+        return (
+            db.query(Course)
+            .filter(Course.teacher_id == current_user.id)
+            .order_by(Course.id)
+            .all()
+        )
     return db.query(Course).order_by(Course.id).all()
 
 
