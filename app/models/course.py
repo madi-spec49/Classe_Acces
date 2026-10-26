@@ -8,6 +8,7 @@ class Course(Base):
     __table_args__ = (
         CheckConstraint("day_of_week BETWEEN 0 AND 6", name="ck_courses_day"),
         CheckConstraint("end_time > start_time", name="ck_courses_times"),
+        CheckConstraint("level IN ('debutant', 'intermediaire', 'avance')", name="ck_courses_level"),
     )
 
     id = Column(Integer, primary_key=True)
