@@ -69,7 +69,7 @@
     const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
     const token = localStorage.getItem("token");
     const $ = (id) => document.getElementById(id);
-    const STATUTS = { present: "Présent", absent: "Absent", late: "En retard" };
+    const STATUTS = { present: "Présent", absent: "Absent", late: "En retard", excused: "Absence justifiée" };
     let monId = null;
 
     const ERREURS = {
@@ -160,6 +160,7 @@
             <option value="present">Présent</option>
             <option value="absent">Absent</option>
             <option value="late">En retard</option>
+            <option value="excused">Absence justifiée</option>
           </select>
           <button class="btn btn-secondary btn-small" type="submit">Enregistrer</button>
         </form>

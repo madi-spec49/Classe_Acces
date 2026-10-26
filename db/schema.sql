@@ -72,7 +72,7 @@ CREATE TABLE attendance_records (
     id          SERIAL PRIMARY KEY,
     session_id  INTEGER     NOT NULL REFERENCES course_sessions(id) ON DELETE CASCADE,
     student_id  INTEGER     NOT NULL REFERENCES users(id)           ON DELETE CASCADE,
-    status      VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'late')),
+    status      VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'late', 'excused')),
     note        TEXT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     -- Une seule présence par élève et par séance
