@@ -108,3 +108,19 @@ def list_course_students(
         {"id": s.id, "first_name": s.first_name, "last_name": s.last_name}
         for s in students
     ]
+
+@router.delete("/{course_id}")
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Le staff peut supprimer n'importe quel cours, le professeur seulement les siens.
+    course = get_course_or_404(course_id, db)
+    if current_user.role != "staff" and course.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Les séances, présences et progressions liées sont supprimées en cascade.
+    db.delete(course)
+    db.commit()
+    return {"deleted": course_id}

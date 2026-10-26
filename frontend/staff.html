@@ -117,6 +117,10 @@
         </div>
         <div><button class="btn btn-primary" type="submit">Créer le cours</button></div>
       </form>
+      <section class="card stack" style="margin-top: 24px;">
+        <h3>Cours existants</h3>
+        <div id="liste-cours"></div>
+      </section>
       <form class="card stack" id="form-mdp" style="margin-top: 24px;">
         <h3>Réinitialiser un mot de passe</h3>
         <div class="field"><label for="mdp-recherche">Rechercher un compte</label><input class="input" id="mdp-recherche" type="search" placeholder="Tape un nom…" /></div>
@@ -343,6 +347,7 @@
         $("cours-debut").value = "10:00";
         $("cours-fin").value = "12:00";
         message("Cours créé.", true);
+        await chargerCoursStaff();
       } catch (erreur) {
         message(MSG_SERVEUR);
       }
@@ -406,10 +411,39 @@
 
     $("logout").addEventListener("click", deconnexion);
 
+    async function chargerCoursStaff() {
+      const zone = $("liste-cours");
+      const r = await appel("/api/courses");
+      if (!r.ok) { zone.innerHTML = '<p class="meta">Impossible de charger les cours.</p>'; return; }
+      if (r.data.length === 0) { zone.innerHTML = '<p class="meta">Aucun cours pour le moment.</p>'; return; }
+      zone.innerHTML = "";
+      r.data.forEach((cours) => {
+        const ligne = document.createElement("div");
+        ligne.className = "row";
+        ligne.style.cssText = "justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border);";
+        ligne.innerHTML = `<span>${esc(cours.subject)} : ${esc(cours.title)} <span class="meta">(${esc(cours.level)}, ${esc(cours.start_time.slice(0, 5))} à ${esc(cours.end_time.slice(0, 5))})</span></span>`;
+        const bouton = document.createElement("button");
+        bouton.className = "btn btn-secondary btn-small";
+        bouton.type = "button";
+        bouton.textContent = "Supprimer";
+        bouton.addEventListener("click", async () => {
+          if (!confirm(`Supprimer « ${cours.subject} : ${cours.title} » ? Ses séances, présences et progressions seront supprimées définitivement.`)) return;
+          const d = await appel(`/api/courses/${cours.id}`, { method: "DELETE" });
+          if (d.status === 401) return;
+          if (!d.ok) { message(libelle(d)); return; }
+          message("Cours supprimé.", true);
+          await chargerCoursStaff();
+        });
+        ligne.append(bouton);
+        zone.append(ligne);
+      });
+    }
+
     if (token && role === "staff") {
       chargerProfesseurs();
       chargerEleves();
       chargerComptes();
+      chargerCoursStaff();
     } else {
       window.location.href = "login.html";
     }
