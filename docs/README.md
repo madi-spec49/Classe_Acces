@@ -13,6 +13,8 @@ Plateforme de cours à distance pour une association scolaire. MVP pour ~100 él
 | 4 | [Spécifications API](<4. Spécifications API.md>) | API externes (HelloAsso) et endpoints internes REST |
 | 5 | [SCM et QA](<5. SCM et QA.md>) | Stratégie Git, revues de code, tests, pipeline CI/CD |
 | 6 | [Documentation Technique Finale](<6. Documentation Technique Finale.md>) | **Document maître** — synthèse complète des sections 0 à 5 + justifications techniques |
+| 7 | [Roadmap Phase Future](<7. Roadmap Phase Future.md>) | Modules hors MVP et améliorations prévues |
+| 8 | [Plan de Sprints](<8. Plan de Sprints.md>) | Découpage du MVP en sprints |
 
 ## Maquettes interactives
 
