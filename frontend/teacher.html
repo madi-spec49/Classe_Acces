@@ -69,7 +69,6 @@
     const MSG_SERVEUR = "Le serveur ne répond pas. Vérifie que l'API tourne.";
     const token = localStorage.getItem("token");
     const $ = (id) => document.getElementById(id);
-    const STATUTS = { present: "Présent", absent: "Absent", late: "En retard", excused: "Absence justifiée" };
     let monId = null;
 
     const ERREURS = {
@@ -138,64 +137,70 @@
       $("prog-eleve").innerHTML = options(await listeEleves(coursId));
     }
 
-    async function afficherAppel(sessionId, liste, noms) {
-      const r = await appel(`/api/sessions/${sessionId}/attendance`);
-      if (!r.ok) return;
-      liste.innerHTML = r.data
-        .map((a) => `<li>${esc(noms[a.student_id] || "Élève " + a.student_id)} : ${esc(STATUTS[a.status] || a.status)}</li>`)
-        .join("");
+    // Enregistre le statut d'un élève pour une séance. Renvoie true si c'est réussi.
+    async function enregistrerPresence(sessionId, eleveId, statut) {
+      const r = await appel(`/api/sessions/${sessionId}/attendance`, {
+        method: "POST",
+        body: JSON.stringify({ student_id: eleveId, status: statut }),
+      });
+      if (r.status === 401) return false;
+      if (!r.ok) { message(libelle(r)); return false; }
+      return true;
     }
 
-    function blocSession(session, eleves) {
+    // Une séance : une ligne par élève avec son statut, enregistré dès le choix
+    async function blocSession(session, eleves) {
       const bloc = document.createElement("div");
       bloc.style.padding = "12px 0";
       bloc.style.borderBottom = "1px solid var(--border)";
-      const noms = Object.fromEntries(eleves.map((e) => [e.id, `${e.first_name} ${e.last_name}`]));
       const date = new Date(session.date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
       bloc.innerHTML = `
         <div><strong>${esc(date)}</strong></div>
-        <form class="row" style="flex-wrap: wrap; margin-top: 8px;">
-          <select class="input" required style="min-width: 180px;">${options(eleves)}</select>
-          <select class="input" required>
+        <div class="appel" style="margin-top: 8px;"></div>
+        <button class="btn btn-secondary btn-small" type="button" data-tous style="margin-top: 8px;">Tous présents</button>`;
+
+      const zone = bloc.querySelector(".appel");
+      if (eleves.length === 0) {
+        zone.innerHTML = '<p class="meta">Aucun élève de ce niveau dans ce cours.</p>';
+      }
+
+      // Statuts déjà enregistrés pour cette séance
+      const r = await appel(`/api/sessions/${session.id}/attendance`);
+      const actuels = r.ok ? Object.fromEntries(r.data.map((a) => [a.student_id, a.status])) : {};
+
+      for (const eleve of eleves) {
+        const ligne = document.createElement("div");
+        ligne.className = "row";
+        ligne.style.cssText = "justify-content: space-between; align-items: center; padding: 4px 0;";
+        ligne.innerHTML = `
+          <span>${esc(eleve.first_name)} ${esc(eleve.last_name)}</span>
+          <select class="input" style="min-width: 200px;" aria-label="Statut de ${esc(eleve.first_name)}">
+            <option value="">— Non renseigné —</option>
             <option value="present">Présent</option>
             <option value="absent">Absent</option>
             <option value="late">En retard</option>
             <option value="excused">Absence justifiée</option>
-          </select>
-          <button class="btn btn-secondary btn-small" type="submit">Enregistrer</button>
-        </form>
-        <button class="btn btn-secondary btn-small" type="button" data-tous style="margin-top: 8px;">Tous présents</button>
-        <ul class="meta" style="margin: 8px 0 0; padding-left: 18px;"></ul>`;
-
-      const liste = bloc.querySelector("ul");
+          </select>`;
+        const select = ligne.querySelector("select");
+        select.value = actuels[eleve.id] || "";
+        select.addEventListener("change", async () => {
+          if (!select.value) return;
+          if (await enregistrerPresence(session.id, eleve.id, select.value)) {
+            message("Présence enregistrée.", true);
+          }
+        });
+        zone.append(ligne);
+      }
 
       bloc.querySelector("[data-tous]").addEventListener("click", async () => {
         if (eleves.length === 0) { message("Aucun élève dans ce cours."); return; }
         for (const eleve of eleves) {
-          const r = await appel(`/api/sessions/${session.id}/attendance`, {
-            method: "POST",
-            body: JSON.stringify({ student_id: eleve.id, status: "present" }),
-          });
-          if (r.status === 401) return;
-          if (!r.ok) { message(libelle(r)); return; }
+          if (!(await enregistrerPresence(session.id, eleve.id, "present"))) return;
         }
+        zone.querySelectorAll("select").forEach((select) => { select.value = "present"; });
         message("Tous les élèves sont marqués présents.", true);
-        await afficherAppel(session.id, liste, noms);
-      });
-      bloc.querySelector("form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const [eleve, statut] = event.target.querySelectorAll("select");
-        const r = await appel(`/api/sessions/${session.id}/attendance`, {
-          method: "POST",
-          body: JSON.stringify({ student_id: Number(eleve.value), status: statut.value }),
-        });
-        if (r.status === 401) return;
-        if (!r.ok) { message(libelle(r)); return; }
-        message("Présence enregistrée.", true);
-        await afficherAppel(session.id, liste, noms);
       });
 
-      afficherAppel(session.id, liste, noms);
       return bloc;
     }
 
@@ -208,7 +213,9 @@
       if (!r.ok) { zone.textContent = "Impossible de charger les sessions."; return carte; }
       if (r.data.length === 0) zone.innerHTML = '<p class="meta">Aucune session prévue.</p>';
       const eleves = await listeEleves(cours.id);
-      r.data.forEach((session) => zone.append(blocSession(session, eleves)));
+      for (const session of r.data) {
+        zone.append(await blocSession(session, eleves));
+      }
       return carte;
     }
 
