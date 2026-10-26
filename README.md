@@ -25,7 +25,8 @@ Projet réalisé dans le cadre du **Portfolio Stage 4** (Holberton School), dév
 
 - **Comptes** : tous les comptes (élève, parent, professeur, staff) sont créés par le staff. Il n'y a pas d'inscription publique.
 - **Niveaux** : chaque cours et chaque élève a un niveau (`debutant`, `intermediaire` ou `avance`). Un élève ne voit que les cours de son niveau.
-- **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées et peut supprimer le cours. La suppression efface aussi ses séances, présences et progressions.
+- **Cours et séances** : le staff crée et supprime les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées. La suppression d'un cours efface aussi ses séances, présences et progressions.
+- **Suppression de comptes** : réservée au staff. Un professeur qui a encore des cours ne peut pas être supprimé.
 - **Assiduité** : le professeur d'un cours enregistre le statut de chaque élève de son niveau : présent, absent ou en retard (`present`, `absent`, `late`).
 - **Progression** : depuis la carte de chaque cours, le professeur enregistre pour chaque élève de son niveau le niveau atteint et une note facultative.
 - **Suivi familial** : un parent lié à un élève consulte ses présences et sa progression. Il ne voit que ses propres enfants.
@@ -43,7 +44,8 @@ Le contrôle d'accès repose sur le rôle de l'utilisateur (RBAC) : la dépendan
 | Créer un compte élève, parent ou professeur | ❌ | ❌ | ❌ | ✅ |
 | Lier un parent à un élève | ❌ | ❌ | ❌ | ✅ |
 | Créer un cours | ❌ | ❌ | ❌ | ✅ |
-| Supprimer un cours (et son historique) | ❌ | ❌ | ✅ (ses cours) | ✅ |
+| Supprimer un cours (et son historique) | ❌ | ❌ | ❌ | ✅ |
+| Supprimer un compte élève, parent ou professeur | ❌ | ❌ | ❌ | ✅ |
 | Créer une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
 | Voir les cours de son niveau | ✅ | ❌ | ❌ | ✅ (tous) |
 | Saisir l'assiduité | ❌ | ❌ | ✅ (ses cours, niveau de l'élève) | ❌ |
@@ -301,7 +303,8 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/courses` | Staff | Crée un cours |
 | GET | `/api/courses` | Connecté | Liste les cours (élève : son niveau uniquement) |
 | GET | `/api/courses/{course_id}/students` | Staff ou professeur du cours | Liste les élèves du niveau du cours |
-| DELETE | `/api/courses/{course_id}` | Staff ou professeur du cours | Supprime le cours, ses séances, présences et progressions |
+| DELETE | `/api/courses/{course_id}` | Staff | Supprime le cours, ses séances, présences et progressions |
+| DELETE | `/api/staff/users/{user_id}` | Staff | Supprime un élève, un parent ou un professeur sans cours |
 | POST | `/api/courses/{course_id}/sessions` | Staff ou professeur du cours | Crée une séance |
 | GET | `/api/courses/{course_id}/sessions` | Connecté | Liste les séances d'un cours |
 | POST | `/api/sessions/{session_id}/attendance` | Professeur du cours | Enregistre ou met à jour une présence |
@@ -333,11 +336,12 @@ python -m pytest -v
 
 Chaque test part d'une base vide : `conftest.py` crée les tables avant le test et les supprime après. Les comptes de test sont créés par la fixture `make_user`, qui les insère directement en base et génère un token valide. Les tests ne passent donc pas par la route de connexion pour créer leurs données, ce qui évite qu'une panne de la connexion fasse échouer tous les autres tests.
 
-**Ce qui est testé** (42 tests) :
+**Ce qui est testé** (47 tests) :
 
 - **Authentification** : connexion réussie, mauvais mot de passe, `/me` avec et sans token, token invalide.
 - **Rôles** : un élève ne peut pas créer de cours ni de séance, et un compte qui n'est pas professeur ne peut pas être lié à un cours.
-- **Cours et séances** : création de cours par le staff, horaires incohérents refusés, un professeur doit avoir le rôle professeur, un élève ne voit que les cours de son niveau, suppression d'un cours réservée au staff et au professeur du cours.
+- **Cours et séances** : création de cours par le staff, horaires incohérents refusés, un professeur doit avoir le rôle professeur, un élève ne voit que les cours de son niveau, suppression d'un cours réservée au staff.
+- **Suppression de comptes** : le staff supprime élèves et parents, ne supprime pas un compte staff, ne supprime pas un professeur qui a des cours, et un élève ne peut pas supprimer quelqu'un.
 - **Assiduité** : seul le professeur du cours peut saisir les présences, un élève hors niveau est refusé, une seconde saisie met à jour la première.
 - **Progression** : même règle de niveau, lecture limitée à l'élève, à son parent lié et au staff.
 - **Parents** : création par le staff, lien parent-élève, un parent non lié ne voit pas la progression.

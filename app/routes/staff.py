@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_db
 from app.dependencies import require_role
-from app.models import User
+from app.models import Course, User
 from app.schemas.auth import PasswordReset, StudentCreate, UserRegister, UserResponse
 from app.security import hash_password
 
@@ -122,3 +122,24 @@ def reset_password(
     user.password_hash = hash_password(data.password)
     db.commit()
     return {"id": user.id}
+
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("staff")),
+):
+    # Le staff ne se supprime pas lui-même ni un autre compte staff.
+    user = db.get(User, user_id)
+    if user is None or user.role == "staff":
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Un professeur qui a encore des cours ne peut pas être supprimé : il faut d'abord supprimer ou réaffecter ses cours.
+    if user.role == "teacher" and db.query(Course).filter(Course.teacher_id == user.id).first() is not None:
+        raise HTTPException(status_code=400, detail="Teacher still has courses")
+
+    # Présences, progression et liens parent-enfant sont supprimés en cascade.
+    db.delete(user)
+    db.commit()
+    return {"deleted": user_id}
