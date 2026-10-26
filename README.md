@@ -27,7 +27,7 @@ Projet réalisé dans le cadre du **Portfolio Stage 4** (Holberton School), dév
 - **Niveaux** : chaque cours et chaque élève a un niveau (`debutant`, `intermediaire` ou `avance`). Un élève ne voit que les cours de son niveau.
 - **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées et peut supprimer le cours. La suppression efface aussi ses séances, présences et progressions.
 - **Assiduité** : le professeur d'un cours enregistre le statut de chaque élève de son niveau : présent, absent ou en retard (`present`, `absent`, `late`).
-- **Progression** : le professeur enregistre le niveau atteint et une note pour un élève de son niveau.
+- **Progression** : depuis la carte de chaque cours, le professeur enregistre pour chaque élève de son niveau le niveau atteint et une note facultative.
 - **Suivi familial** : un parent lié à un élève consulte ses présences et sa progression. Il ne voit que ses propres enfants.
 - **Authentification** : connexion par email et mot de passe, jeton JWT valable 60 minutes.
 
@@ -205,7 +205,7 @@ school-assoc/
 │   ├── helpers.py          # Mot de passe de test et construction du header Authorization
 │   ├── test_auth.py        # Connexion, /me
 │   ├── test_staff.py       # Création de comptes et contrôle des rôles
-│   ├── test_courses.py     # Cours, séances, filtre par niveau
+│   ├── test_courses.py     # Cours, séances, suppression, filtre par niveau
 │   ├── test_attendance.py  # Assiduité
 │   ├── test_progress.py    # Progression
 │   └── test_parents.py     # Comptes parents et lien parent-élève
@@ -333,11 +333,11 @@ python -m pytest -v
 
 Chaque test part d'une base vide : `conftest.py` crée les tables avant le test et les supprime après. Les comptes de test sont créés par la fixture `make_user`, qui les insère directement en base et génère un token valide. Les tests ne passent donc pas par la route de connexion pour créer leurs données, ce qui évite qu'une panne de la connexion fasse échouer tous les autres tests.
 
-**Ce qui est testé** (36 tests) :
+**Ce qui est testé** (42 tests) :
 
 - **Authentification** : connexion réussie, mauvais mot de passe, `/me` avec et sans token, token invalide.
 - **Rôles** : un élève ne peut pas créer de cours ni de séance, et un compte qui n'est pas professeur ne peut pas être lié à un cours.
-- **Cours et séances** : création de cours par le staff, horaires incohérents refusés, un professeur doit avoir le rôle professeur, un élève ne voit que les cours de son niveau.
+- **Cours et séances** : création de cours par le staff, horaires incohérents refusés, un professeur doit avoir le rôle professeur, un élève ne voit que les cours de son niveau, suppression d'un cours réservée au staff et au professeur du cours.
 - **Assiduité** : seul le professeur du cours peut saisir les présences, un élève hors niveau est refusé, une seconde saisie met à jour la première.
 - **Progression** : même règle de niveau, lecture limitée à l'élève, à son parent lié et au staff.
 - **Parents** : création par le staff, lien parent-élève, un parent non lié ne voit pas la progression.
@@ -378,7 +378,7 @@ Les commits suivent la convention **Conventional Commits** : `feat:`, `fix:`, `d
 
 ## Limites connues et évolutions
 
-- **Espace parent** : la page parent affiche les enfants liés, mais le suivi détaillé (présences, progression) reste à relier à cette page.
+- **Modification des cours** : un cours se crée et se supprime, mais ne se modifie pas. Pour changer un horaire, il faut le supprimer et le recréer.
 - **Démarrage** : `Base.metadata.create_all` crée les tables mais n'ajoute pas les nouvelles colonnes sur une base existante. Il faut alors appliquer les scripts de `db/`. Un outil de migrations (Alembic) est prévu.
 - **Fichier `.env`** : les variables doivent être exportées manuellement. Le chargement automatique est prévu.
 - **Authentification** : il n'y a pas de rafraîchissement de jeton. À l'expiration (60 minutes par défaut), l'utilisateur doit se reconnecter.
