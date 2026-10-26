@@ -44,16 +44,6 @@
         <div><button class="btn btn-primary" type="submit">Créer la séance</button></div>
       </form>
 
-      <div class="section-head" style="margin-top: 44px;"><h2>Saisir la progression</h2></div>
-      <form class="card stack" id="form-progression">
-        <div class="form-grid">
-          <div class="field"><label for="prog-cours">Cours</label><select class="input" id="prog-cours" required></select></div>
-          <div class="field"><label for="prog-eleve">Élève</label><select class="input" id="prog-eleve" required></select></div>
-        </div>
-        <div class="field"><label for="prog-niveau">Niveau</label><input class="input" id="prog-niveau" required placeholder="Ex. : Acquis, En progrès" /></div>
-        <div class="field"><label for="prog-note">Note (facultatif)</label><input class="input" id="prog-note" /></div>
-        <div><button class="btn btn-primary" type="submit">Enregistrer la progression</button></div>
-      </form>
     </section>
   </main>
 
@@ -124,17 +114,6 @@
     async function listeEleves(coursId) {
       const r = await appel(`/api/courses/${coursId}/students`);
       return r.ok ? r.data : [];
-    }
-
-    // Transforme la liste en options <option> : nom affiché, identifiant envoyé
-    function options(eleves) {
-      return eleves
-        .map((e) => `<option value="${e.id}">${esc(e.first_name)} ${esc(e.last_name)}</option>`)
-        .join("");
-    }
-
-    async function remplirEleves(coursId) {
-      $("prog-eleve").innerHTML = options(await listeEleves(coursId));
     }
 
     // Enregistre le statut d'un élève pour une séance. Renvoie true si c'est réussi.
@@ -216,6 +195,42 @@
         zone.append(await blocSession(session, eleves));
       }
 
+      if (eleves.length > 0) {
+        const titre = document.createElement("h4");
+        titre.textContent = "Progression";
+        titre.style.marginTop = "16px";
+        carte.append(titre);
+        for (const eleve of eleves) {
+          const ligne = document.createElement("form");
+          ligne.className = "row";
+          ligne.style.cssText = "flex-wrap: wrap; align-items: center; padding: 6px 0;";
+          ligne.innerHTML = `
+            <span style="min-width: 160px;">${esc(eleve.first_name)} ${esc(eleve.last_name)}</span>
+            <input class="input" required placeholder="Niveau (ex. Acquis)" style="min-width: 160px;" aria-label="Niveau de ${esc(eleve.first_name)}" />
+            <input class="input" placeholder="Note (facultatif)" style="min-width: 220px;" aria-label="Note pour ${esc(eleve.first_name)}" />
+            <button class="btn btn-secondary btn-small" type="submit">Enregistrer</button>`;
+          const [niveau, note] = ligne.querySelectorAll("input");
+          ligne.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const d = await appel("/api/progress", {
+              method: "POST",
+              body: JSON.stringify({
+                student_id: eleve.id,
+                course_id: cours.id,
+                level: niveau.value,
+                note: note.value || null,
+              }),
+            });
+            if (d.status === 401) return;
+            if (!d.ok) { message(libelle(d)); return; }
+            message(`Progression de ${eleve.first_name} enregistrée.`, true);
+            niveau.value = "";
+            note.value = "";
+          });
+          carte.append(ligne);
+        }
+      }
+
       const suppr = document.createElement("button");
       suppr.className = "btn btn-secondary btn-small";
       suppr.type = "button";
@@ -241,9 +256,7 @@
       const optionsCours = mes
         .map((c) => `<option value="${c.id}">${esc(c.subject)} : ${esc(c.title)}</option>`)
         .join("");
-      $("prog-cours").innerHTML = optionsCours;
       $("seance-cours").innerHTML = optionsCours;
-      if (mes.length > 0) await remplirEleves(mes[0].id);
 
       $("cours").innerHTML = "";
       if (mes.length === 0) {
@@ -269,8 +282,6 @@
 
     $("logout").addEventListener("click", deconnexion);
 
-    $("prog-cours").addEventListener("change", () => remplirEleves(Number($("prog-cours").value)));
-
     $("form-seance").addEventListener("submit", async (event) => {
       event.preventDefault();
       const r = await appel(`/api/courses/${Number($("seance-cours").value)}/sessions`, {
@@ -282,23 +293,6 @@
       event.target.reset();
       message("Séance créée.", true);
       await chargerCours();
-    });
-
-    $("form-progression").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const r = await appel("/api/progress", {
-        method: "POST",
-        body: JSON.stringify({
-          student_id: Number($("prog-eleve").value),
-          course_id: Number($("prog-cours").value),
-          level: $("prog-niveau").value,
-          note: $("prog-note").value || null,
-        }),
-      });
-      if (r.status === 401) return;
-      if (!r.ok) { message(libelle(r)); return; }
-      event.target.reset();
-      message("Progression enregistrée.", true);
     });
 
     demarrer();
