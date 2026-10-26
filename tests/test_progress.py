@@ -85,6 +85,8 @@ def test_student_reads_own_progress(client, data):
 
     assert response.status_code == 200
     assert len(response.json()) == 1
+    assert response.json()[0]["course_subject"]
+    assert response.json()[0]["course_title"]
 
 
 def test_student_cannot_read_other_progress(client, data):
