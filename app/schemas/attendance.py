@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 class AttendanceCreate(BaseModel):
     student_id: int
-    status: Literal["present", "absent", "late", "excused"]
+    status: Literal["present", "absent", "late"]
     note: Optional[str] = None
 
 
