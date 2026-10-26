@@ -25,7 +25,7 @@ Projet réalisé dans le cadre du **Portfolio Stage 4** (Holberton School), dév
 
 - **Comptes** : tous les comptes (élève, parent, professeur, staff) sont créés par le staff. Il n'y a pas d'inscription publique.
 - **Niveaux** : chaque cours et chaque élève a un niveau (`debutant`, `intermediaire` ou `avance`). Un élève ne voit que les cours de son niveau.
-- **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom) et leurs séances datées.
+- **Cours et séances** : le staff crée les cours (matière, jour, horaires, professeur, niveau, lien Zoom). Le staff ou le professeur du cours crée les séances datées.
 - **Assiduité** : le professeur d'un cours enregistre la présence (`present`, `absent`, `late`) des élèves de son niveau.
 - **Progression** : le professeur enregistre le niveau atteint et une note pour un élève de son niveau.
 - **Suivi familial** : un parent lié à un élève consulte ses présences et sa progression. Il ne voit que ses propres enfants.
@@ -42,7 +42,8 @@ Le contrôle d'accès repose sur le rôle de l'utilisateur (RBAC) : la dépendan
 | Se connecter, voir son profil | ✅ | ✅ | ✅ | ✅ |
 | Créer un compte élève, parent ou professeur | ❌ | ❌ | ❌ | ✅ |
 | Lier un parent à un élève | ❌ | ❌ | ❌ | ✅ |
-| Créer un cours et ses séances | ❌ | ❌ | ❌ | ✅ |
+| Créer un cours | ❌ | ❌ | ❌ | ✅ |
+| Créer une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
 | Voir les cours de son niveau | ✅ | ❌ | ❌ | ✅ (tous) |
 | Saisir l'assiduité | ❌ | ❌ | ✅ (ses cours, niveau de l'élève) | ❌ |
 | Voir l'assiduité d'une séance | ❌ | ❌ | ✅ (ses cours) | ✅ |
@@ -299,7 +300,7 @@ Toutes les routes sont préfixées par `/api`. Les réponses sont au format JSON
 | POST | `/api/courses` | Staff | Crée un cours |
 | GET | `/api/courses` | Connecté | Liste les cours (élève : son niveau uniquement) |
 | GET | `/api/courses/{course_id}/students` | Staff ou professeur du cours | Liste les élèves du niveau du cours |
-| POST | `/api/courses/{course_id}/sessions` | Staff | Crée une séance |
+| POST | `/api/courses/{course_id}/sessions` | Staff ou professeur du cours | Crée une séance |
 | GET | `/api/courses/{course_id}/sessions` | Connecté | Liste les séances d'un cours |
 | POST | `/api/sessions/{session_id}/attendance` | Professeur du cours | Enregistre ou met à jour une présence |
 | GET | `/api/sessions/{session_id}/attendance` | Staff ou professeur du cours | Liste les présences d'une séance |
@@ -334,7 +335,7 @@ Chaque test part d'une base vide : `conftest.py` crée les tables avant le test 
 
 - **Authentification** : connexion réussie, mauvais mot de passe, `/me` avec et sans token, token invalide.
 - **Rôles** : un élève ne peut pas créer de cours ni de séance, et un compte qui n'est pas professeur ne peut pas être lié à un cours.
-- **Cours et séances** : création par le staff, horaires incohérents refusés, un professeur doit avoir le rôle professeur, un élève ne voit que les cours de son niveau.
+- **Cours et séances** : création de cours par le staff, horaires incohérents refusés, un professeur doit avoir le rôle professeur, un élève ne voit que les cours de son niveau.
 - **Assiduité** : seul le professeur du cours peut saisir les présences, un élève hors niveau est refusé, une seconde saisie met à jour la première.
 - **Progression** : même règle de niveau, lecture limitée à l'élève, à son parent lié et au staff.
 - **Parents** : création par le staff, lien parent-élève, un parent non lié ne voit pas la progression.
