@@ -153,6 +153,29 @@ def test_student_can_list_sessions(client, staff_token, student_token, teacher_i
     assert len(response.json()) == 1
 
 
+def test_student_cannot_list_sessions_of_other_level(client, staff_token, student_token, teacher_id):
+    course_id = create_course(client, staff_token, teacher_id, level="avance")
+
+    response = client.get(
+        f"/api/courses/{course_id}/sessions",
+        headers=auth(student_token),
+    )
+
+    assert response.status_code == 403
+
+
+def test_other_teacher_cannot_list_sessions(client, make_user, staff_token, teacher_id):
+    course_id = create_course(client, staff_token, teacher_id)
+    other_token, _ = make_user("autre.prof@example.com", role="teacher")
+
+    response = client.get(
+        f"/api/courses/{course_id}/sessions",
+        headers=auth(other_token),
+    )
+
+    assert response.status_code == 403
+
+
 def test_teacher_cannot_delete_own_course(client, make_user, staff_token):
     teacher_token, teacher_id = make_user("prof.suppr@example.com", role="teacher")
     course_id = create_course(client, staff_token, teacher_id)
