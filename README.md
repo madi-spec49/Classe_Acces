@@ -373,7 +373,7 @@ Les documents de conception sont dans le dossier [`docs/`](docs/) :
 | 7 | [Roadmap Phase Future](docs/7.%20Roadmap%20Phase%20Future.md) | Modules hors MVP |
 | 8 | [Plan de Sprints](docs/8.%20Plan%20de%20Sprints.md) | Découpage en sprints |
 
-> **Attention** : les documents 0 à 7 datent de la phase de conception. Ils décrivent encore des éléments abandonnés pendant le développement (SQLite, inscriptions par les élèves, signalements, messagerie). **Le README et `db/schema.sql` font foi** pour le fonctionnement actuel.
+> **Note** : les documents 0 à 6 décrivent le MVP livré ; les éléments abandonnés ou reportés (inscriptions par les élèves, signalements, messagerie, SQLite en production) y sont signalés comme tels. Le document 8 est un plan de sprints prévisionnel daté du 8 octobre 2026. En cas de divergence, **le README et `db/schema.sql` font foi**.
 
 Les wireframes interactifs sont dans [`docs/maquettes.html`](docs/maquettes.html), à ouvrir dans un navigateur.
 
