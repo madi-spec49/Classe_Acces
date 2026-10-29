@@ -1,10 +1,14 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+from sqlalchemy import CheckConstraint, Column, Integer, String, Boolean, DateTime, func
 
 from app.models.base import Base
 
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("role IN ('student', 'parent', 'teacher', 'staff')", name="ck_users_role"),
+        CheckConstraint("level IN ('debutant', 'intermediaire', 'avance')", name="ck_users_level"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)

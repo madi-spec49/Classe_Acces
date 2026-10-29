@@ -16,6 +16,9 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="Account disabled")
+
     token = create_access_token(user.id, user.email)
     return {
         "access_token": token,
