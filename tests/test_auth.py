@@ -24,6 +24,24 @@ def test_login_wrong_password_returns_401(client, make_user):
     assert response.status_code == 401
 
 
+def test_login_disabled_account_returns_401(client, make_user):
+    from conftest import TestingSessionLocal
+    from app.models import User
+
+    make_user("disabled@example.com")
+    db = TestingSessionLocal()
+    db.query(User).filter(User.email == "disabled@example.com").update({"is_active": False})
+    db.commit()
+    db.close()
+
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "disabled@example.com", "password": PASSWORD},
+    )
+
+    assert response.status_code == 401
+
+
 def test_me_with_valid_token(client, make_user):
     token, _ = make_user("me@example.com")
 
