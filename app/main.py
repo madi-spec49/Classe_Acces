@@ -5,7 +5,7 @@ from app.config import engine
 from app.models import Base
 from app.routes import auth, staff, courses, attendance, progress, parents, suivi
 
-app = FastAPI(title="My FastAPI Application")
+app = FastAPI(title="Classe Accès API")
 
 app.add_middleware(
     CORSMiddleware,
