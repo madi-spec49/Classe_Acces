@@ -153,6 +153,29 @@ def test_student_can_list_sessions(client, staff_token, student_token, teacher_i
     assert len(response.json()) == 1
 
 
+def test_student_cannot_list_sessions_of_other_level(client, staff_token, student_token, teacher_id):
+    course_id = create_course(client, staff_token, teacher_id, level="avance")
+
+    response = client.get(
+        f"/api/courses/{course_id}/sessions",
+        headers=auth(student_token),
+    )
+
+    assert response.status_code == 403
+
+
+def test_other_teacher_cannot_list_sessions(client, make_user, staff_token, teacher_id):
+    course_id = create_course(client, staff_token, teacher_id)
+    other_token, _ = make_user("autre.prof@example.com", role="teacher")
+
+    response = client.get(
+        f"/api/courses/{course_id}/sessions",
+        headers=auth(other_token),
+    )
+
+    assert response.status_code == 403
+
+
 def test_teacher_cannot_delete_own_course(client, make_user, staff_token):
     teacher_token, teacher_id = make_user("prof.suppr@example.com", role="teacher")
     course_id = create_course(client, staff_token, teacher_id)
@@ -193,3 +216,17 @@ def test_delete_unknown_course_returns_404(client, staff_token):
     response = client.delete("/api/courses/999", headers=auth(staff_token))
 
     assert response.status_code == 404
+
+
+def test_teacher_sees_only_own_courses(client, make_user, staff_token):
+    teacher_token, teacher_id = make_user("prof.liste@example.com", role="teacher")
+    _, other_teacher_id = make_user("prof.autre.liste@example.com", role="teacher")
+    own_id = create_course(client, staff_token, teacher_id)
+    other_id = create_course(client, staff_token, other_teacher_id)
+
+    response = client.get("/api/courses", headers=auth(teacher_token))
+
+    ids = [c["id"] for c in response.json()]
+    assert own_id in ids
+    assert other_id not in ids
+

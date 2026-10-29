@@ -137,10 +137,6 @@
 
       const progression = await appel(`/api/progress/students/${id}`);
       if (progression.status === 401) return;
-      const cours = await appel("/api/courses");
-      const nomCours = {};
-      if (cours.ok) cours.data.forEach((c) => { nomCours[c.id] = `${c.subject} : ${c.title}`; });
-
       const zoneProgression = $("progression");
       if (!progression.ok) {
         message("Impossible de charger la progression.");
@@ -153,7 +149,7 @@
         progression.data.forEach((g) => {
           const date = new Date(g.date).toLocaleDateString("fr-FR", { dateStyle: "medium" });
           const sousTitre = `${esc(date)}${g.note ? " · " + esc(g.note) : ""}`;
-          zoneProgression.append(ligne(esc(nomCours[g.course_id] || "Cours"), sousTitre, `<span class="badge">${esc(g.level)}</span>`));
+          zoneProgression.append(ligne(esc(`${g.course_subject} : ${g.course_title}`), sousTitre, `<span class="badge">${esc(g.level)}</span>`));
         });
       }
     }
