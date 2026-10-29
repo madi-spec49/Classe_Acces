@@ -203,6 +203,8 @@ Classe_Acces/
 │   ├── style.css           # Feuille de style commune
 │   └── logo.svg            # Logo
 ├── postman/                # Collections Postman locales (non versionnées)
+├── scripts/
+│   └── create_staff.py     # Création du premier compte staff
 ├── tests/
 │   ├── conftest.py         # Base de test, client et fixture make_user
 │   ├── helpers.py          # Mot de passe de test et construction du header Authorization
@@ -211,7 +213,8 @@ Classe_Acces/
 │   ├── test_courses.py     # Cours, séances, suppression, filtre par niveau
 │   ├── test_attendance.py  # Assiduité
 │   ├── test_progress.py    # Progression
-│   └── test_parents.py     # Comptes parents et lien parent-élève
+│   ├── test_parents.py     # Comptes parents et lien parent-élève
+│   └── test_create_staff.py  # Script de création du premier compte staff
 ├── docker-compose.yml      # Service PostgreSQL
 ├── requirements.txt        # Dépendances Python
 ├── .env.example            # Modèle de variables d'environnement
@@ -265,7 +268,13 @@ python3 -m http.server 5500
 
 Ouvrir ensuite http://127.0.0.1:5500/login.html. Le port 5500 est autorisé par le CORS de l'API.
 
-**Création du premier compte staff.** Il n'existe pas d'inscription publique. Le premier compte staff doit être créé directement en base, puis les autres comptes sont créés depuis la page staff.
+**Création du premier compte staff.** Il n'existe pas d'inscription publique. Le premier compte staff se crée avec le script `scripts/create_staff.py`, depuis la machine qui a accès à la base (le mot de passe doit faire au moins 8 caractères) :
+
+```bash
+python -m scripts.create_staff
+```
+
+Les autres comptes sont ensuite créés depuis la page staff.
 
 **Base existante (avant le système de niveaux).** Lancer une seule fois `db/migration_niveaux.sql` sur la base. Ce script ajoute les colonnes de niveau, supprime l'ancienne table des demandes d'inscription, et ne supprime aucun compte, cours ni présence.
 
@@ -337,7 +346,7 @@ python -m pytest -v
 
 Chaque test part d'une base vide : `conftest.py` crée les tables avant le test et les supprime après. Les comptes de test sont créés par la fixture `make_user`, qui les insère directement en base et génère un token valide. Les tests ne passent donc pas par la route de connexion pour créer leurs données, ce qui évite qu'une panne de la connexion fasse échouer tous les autres tests.
 
-**Ce qui est testé** (53 tests) :
+**Ce qui est testé** (58 tests) :
 
 - **Authentification** : connexion réussie, mauvais mot de passe, compte désactivé refusé, `/me` avec et sans token, token invalide.
 - **Rôles** : un élève ne peut pas créer de cours ni de séance, et un compte qui n'est pas professeur ne peut pas être lié à un cours.
@@ -345,6 +354,7 @@ Chaque test part d'une base vide : `conftest.py` crée les tables avant le test 
 - **Suppression de comptes** : le staff supprime élèves et parents, ne supprime pas un compte staff, ne supprime pas un professeur qui a des cours, et un élève ne peut pas supprimer quelqu'un.
 - **Assiduité** : seul le professeur du cours peut saisir les présences, un élève hors niveau est refusé, une seconde saisie met à jour la première.
 - **Progression** : même règle de niveau, lecture limitée à l'élève, à son parent lié et au staff.
+- **Premier compte staff** : le script crée un staff avec mot de passe haché, refuse un email en double, un mot de passe trop court et un email invalide.
 - **Parents** : création par le staff, lien parent-élève, un parent non lié ne voit pas la progression, un parent n'a accès ni aux cours ni aux séances.
 
 ## Documentation
