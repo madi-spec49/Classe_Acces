@@ -4,6 +4,11 @@ from app.models.base import Base
 
 
 class AttendanceRecord(Base):
+    """Assiduité d'un élève à une séance : présent, absent ou en retard.
+
+    Un élève a au plus un relevé par séance (contrainte d'unicité).
+    """
+
     __tablename__ = "attendance_records"
     __table_args__ = (
         CheckConstraint("status IN ('present', 'absent', 'late')", name="ck_attendance_status"),

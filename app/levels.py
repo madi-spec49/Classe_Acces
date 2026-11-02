@@ -1,4 +1,4 @@
 from typing import Literal
 
-# The three levels a course and a student can have.
+# Les trois niveaux possibles pour un cours et pour un élève.
 Level = Literal["debutant", "intermediaire", "avance"]
