@@ -31,14 +31,6 @@ flowchart LR
     A -->|"réponse JSON"| N
     A -->|"requête SQL"| D
     D -->|"données"| A
-
-    classDef browserStyle stroke:#38bdf8,fill:#f0f9ff
-    classDef apiStyle stroke:#a78bfa,fill:#f5f3ff
-    classDef dbStyle stroke:#4ade80,fill:#f0fdf4
-
-    class N browserStyle
-    class A apiStyle
-    class D dbStyle
 ```
 
 ## 🗄️ Base de données
