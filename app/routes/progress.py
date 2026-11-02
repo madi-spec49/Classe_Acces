@@ -1,3 +1,5 @@
+"""Routes de la progression : saisie par le professeur, consultation par les personnes autorisées."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,7 @@ def record_progress(
     db: Session = Depends(get_db),
     teacher: User = Depends(require_role("teacher")),
 ):
+    """Enregistre une progression ; le cours doit être celui du professeur et l'élève de son niveau."""
     course = db.get(Course, payload.course_id)
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -44,6 +47,10 @@ def list_student_progress(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Liste la progression d'un élève avec le nom du cours.
+
+    Accès : le staff, l'élève lui-même, ses parents liés, ou un professeur qui a un cours de son niveau.
+    """
     if user.role == "staff" or user.id == student_id:
         allowed = True
     elif user.role == "parent":
