@@ -1,3 +1,5 @@
+"""Routes réservées au staff : création, liste, réinitialisation et suppression de comptes."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,7 @@ def create_teacher(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Crée un compte professeur ; le rôle est fixé ici, jamais lu dans la requête."""
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -40,6 +43,7 @@ def create_student(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Crée un compte élève avec son niveau ; le rôle est fixé ici."""
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -62,6 +66,7 @@ def list_teachers(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Liste les professeurs (id et nom), triés par nom."""
     teachers = (
         db.query(User)
         .filter(User.role == "teacher")
@@ -79,6 +84,7 @@ def list_students(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Liste les élèves (id et nom), triés par nom."""
     students = (
         db.query(User)
         .filter(User.role == "student")
@@ -96,6 +102,7 @@ def list_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Liste tous les comptes sauf les comptes staff."""
     users = (
         db.query(User)
         .filter(User.role != "staff")
@@ -115,6 +122,7 @@ def reset_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Remplace le mot de passe d'un compte non staff (404 pour un compte staff)."""
     user = db.get(User, user_id)
     if user is None or user.role == "staff":
         raise HTTPException(status_code=404, detail="User not found")
@@ -130,6 +138,7 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Supprime un compte non staff, avec son historique (présences, progression, liens)."""
     # Le staff ne se supprime pas lui-même ni un autre compte staff.
     user = db.get(User, user_id)
     if user is None or user.role == "staff":

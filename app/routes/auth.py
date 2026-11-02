@@ -1,3 +1,5 @@
+"""Routes d'authentification : connexion et profil de l'utilisateur connecté."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -12,6 +14,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/login", response_model=Token)
 def login(data: UserLogin, db: Session = Depends(get_db)):
+    """Connecte un utilisateur : 401 si l'email ou le mot de passe est faux, ou si le compte est désactivé."""
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -29,4 +32,5 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
+    """Renvoie le profil de l'utilisateur identifié par le jeton."""
     return current_user

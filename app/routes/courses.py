@@ -1,3 +1,5 @@
+"""Routes des cours et des séances, avec les règles d'accès par rôle, par niveau et par professeur."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,7 @@ router = APIRouter(prefix="/api/courses", tags=["courses"])
 
 
 def get_course_or_404(course_id: int, db: Session) -> Course:
+    """Renvoie le cours demandé, ou lève une 404 s'il n'existe pas."""
     course = db.query(Course).filter(Course.id == course_id).first()
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -27,6 +30,7 @@ def create_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("staff")),
 ):
+    """Crée un cours (réservé au staff) ; le professeur indiqué doit avoir le rôle teacher."""
     teacher = db.query(User).filter(User.id == data.teacher_id).first()
     if teacher is None or teacher.role != "teacher":
         raise HTTPException(status_code=400, detail="teacher_id must be a teacher account")
@@ -43,6 +47,10 @@ def list_courses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Liste les cours selon le rôle : l'élève voit son niveau, le professeur ses cours, le staff tous.
+
+    Un parent n'a pas accès aux cours (403).
+    """
     if current_user.role == "parent":
         raise HTTPException(status_code=403, detail="Access denied")
     if current_user.role == "student":
@@ -69,6 +77,7 @@ def create_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Crée une séance datée ; réservé au staff ou au professeur du cours."""
     course = get_course_or_404(course_id, db)
     if current_user.role != "staff" and course.teacher_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -86,6 +95,7 @@ def list_sessions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Liste les séances d'un cours : élève de ce niveau, professeur du cours ou staff."""
     course = get_course_or_404(course_id, db)
     if current_user.role == "parent":
         raise HTTPException(status_code=403, detail="Access denied")
@@ -109,6 +119,7 @@ def list_course_students(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Liste les élèves du niveau du cours ; réservé au staff ou au professeur du cours."""
     course = get_course_or_404(course_id, db)
     if current_user.role != "staff" and course.teacher_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -130,7 +141,8 @@ def delete_course(
     db: Session = Depends(get_db),
     staff: User = Depends(require_role("staff")),
 ):
-    # Réservé au staff. Les séances, présences et progressions liées sont supprimées en cascade.
+    """Supprime un cours (réservé au staff)."""
+    # Les séances, présences et progressions liées sont supprimées en cascade.
     course = get_course_or_404(course_id, db)
     db.delete(course)
     db.commit()

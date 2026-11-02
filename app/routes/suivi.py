@@ -1,3 +1,5 @@
+"""Route du suivi : assiduité d'un élève, consultée par l'élève, son parent ou le staff."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -9,6 +11,7 @@ router = APIRouter(prefix="/api/students", tags=["suivi"])
 
 
 def can_view_student(user: User, student_id: int, db: Session) -> bool:
+    """Indique si l'utilisateur peut voir le suivi de cet élève (staff, lui-même ou parent lié)."""
     if user.role == "staff" or user.id == student_id:
         return True
     if user.role == "parent":
@@ -22,6 +25,7 @@ def list_student_attendance(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Liste les présences d'un élève avec la date, la matière et le titre du cours."""
     if not can_view_student(user, student_id, db):
         raise HTTPException(status_code=403, detail="Access denied")
 

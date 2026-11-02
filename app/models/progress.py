@@ -4,6 +4,11 @@ from app.models.base import Base
 
 
 class ProgressRecord(Base):
+    """Progression d'un élève dans un cours, saisie par le professeur.
+
+    `level` est le niveau atteint, en texte libre (ce n'est pas le niveau du cours).
+    """
+
     __tablename__ = "progress_records"
 
     id = Column(Integer, primary_key=True)

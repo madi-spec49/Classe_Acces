@@ -1,3 +1,5 @@
+"""Routes des parents : création du compte, lien avec un élève, liste de ses enfants."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,7 @@ def create_parent(
     db: Session = Depends(get_db),
     staff: User = Depends(require_role("staff")),
 ):
+    """Crée un compte parent (réservé au staff)."""
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing is not None:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -40,6 +43,7 @@ def link_parent_to_student(
     db: Session = Depends(get_db),
     staff: User = Depends(require_role("staff")),
 ):
+    """Lie un parent à un élève ; sans effet si le lien existe déjà."""
     parent = db.get(User, parent_id)
     if parent is None or parent.role != "parent":
         raise HTTPException(status_code=404, detail="Parent not found")
@@ -61,6 +65,7 @@ def list_my_children(
     db: Session = Depends(get_db),
     parent: User = Depends(require_role("parent")),
 ):
+    """Liste les enfants du parent connecté (uniquement ceux auxquels il est lié)."""
     children = (
         db.query(User)
         .join(ParentStudent, ParentStudent.student_id == User.id)
