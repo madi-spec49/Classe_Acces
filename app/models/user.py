@@ -4,6 +4,11 @@ from app.models.base import Base
 
 
 class User(Base):
+    """Compte des quatre rôles (student, parent, teacher, staff).
+
+    `level` n'est renseigné que pour les élèves. Le mot de passe est stocké haché, jamais en clair.
+    """
+
     __tablename__ = "users"
     __table_args__ = (
         CheckConstraint("role IN ('student', 'parent', 'teacher', 'staff')", name="ck_users_role"),

@@ -1,3 +1,5 @@
+"""Configuration de la base de données : URL de connexion, moteur et fabrique de sessions."""
+
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,6 +11,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db():
+    """Dépendance FastAPI : fournit une session de base par requête, puis la ferme."""
     db = SessionLocal()
     try:
         yield db
