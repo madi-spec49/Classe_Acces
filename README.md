@@ -106,7 +106,16 @@ docker compose up -d db
 uvicorn app.main:app --reload
 ```
 
-Puis ouvrir `frontend/login.html` avec un serveur local sur le port 5500.
+Puis lancer le front-end depuis le dossier `frontend/` :
+
+```bash
+cd frontend
+python3 -m http.server 5500
+```
+
+Page de connexion : http://127.0.0.1:5500/login.html
+
+> Ce lien ne fonctionne que sur la machine où tourne le serveur. L'API doit aussi tourner (`uvicorn app.main:app --reload`).
 
 Les variables d'environnement, l'arborescence et la liste des routes sont dans l'[annexe de la documentation technique](docs/6.%20Documentation%20Technique%20Finale.md#annexes-installation-routes-et-organisation).
 
