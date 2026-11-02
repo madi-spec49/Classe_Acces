@@ -4,6 +4,8 @@ from app.models.base import Base
 
 
 class ParentStudent(Base):
+    """Table d'association entre un compte parent et un compte élève (plusieurs à plusieurs)."""
+
     __tablename__ = "parent_student"
     __table_args__ = (
         CheckConstraint("parent_id <> student_id", name="ck_parent_not_student"),

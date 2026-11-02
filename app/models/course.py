@@ -4,6 +4,8 @@ from app.models.base import Base
 
 
 class Course(Base):
+    """Cours hebdomadaire d'un niveau, donné par un professeur (day_of_week : 0 à 6)."""
+
     __tablename__ = "courses"
     __table_args__ = (
         CheckConstraint("day_of_week BETWEEN 0 AND 6", name="ck_courses_day"),
@@ -23,6 +25,8 @@ class Course(Base):
 
 
 class CourseSession(Base):
+    """Séance datée d'un cours ; l'assiduité est enregistrée par séance."""
+
     __tablename__ = "course_sessions"
 
     id = Column(Integer, primary_key=True)
