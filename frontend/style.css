@@ -111,7 +111,7 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .btn-secondary { background: var(--surface); color: var(--fg); border-color: var(--border); }
 .btn-secondary:hover:not(:disabled) { border-color: var(--fg); }
 .btn-secondary:disabled { background: color-mix(in oklch, var(--fg) 4%, var(--surface)); }
-.btn-danger { background: transparent; color: var(--danger); border-color: color-mix(in oklch, var(--danger) 40%, var(--border)); }
+.btn-danger { background: transparent; color: var(--danger); border: 2px solid var(--danger); font-weight: 600; }
 .btn-danger:hover { border-color: var(--danger); background: color-mix(in oklch, var(--danger) 7%, transparent); }
 .btn-small { padding: 7px 14px; font-size: 13px; }
 
