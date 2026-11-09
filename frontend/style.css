@@ -1,9 +1,9 @@
 :root {
-  --bg:      #f5f1e6;
-  --surface: #ffffff;
-  --fg:      #182a1c;
-  --muted:   #5f6b58;
-  --border:  #e2dcc9;
+  --bg:      #efa50954;
+  --surface: rgb(255 255 255 / 88%);
+  --fg:      #075f1b;
+  --muted:   #565800;
+  --border:  #efb706;
   --accent:  #1e5136;
 
   --ok:      #2e7d4f;
@@ -41,8 +41,8 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
+  background: rgb(127 140 106 / 52%);
+  color: #254271;
   font-family: var(--font-body);
   font-size: var(--fs-body);
   line-height: 1.55;
@@ -111,7 +111,7 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .btn-secondary { background: var(--surface); color: var(--fg); border-color: var(--border); }
 .btn-secondary:hover:not(:disabled) { border-color: var(--fg); }
 .btn-secondary:disabled { background: color-mix(in oklch, var(--fg) 4%, var(--surface)); }
-.btn-danger { background: transparent; color: var(--danger); border-color: color-mix(in oklch, var(--danger) 40%, var(--border)); }
+.btn-danger { background: transparent; color: var(--danger); border: 2px solid var(--danger); font-weight: 600; }
 .btn-danger:hover { border-color: var(--danger); background: color-mix(in oklch, var(--danger) 7%, transparent); }
 .btn-small { padding: 7px 14px; font-size: 13px; }
 
